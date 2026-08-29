@@ -1,0 +1,49 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>{% block titulo %}{{ nombre_clinica }}{% endblock %}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+</head>
+<body>
+    <div class="app-shell">
+        <aside class="sidebar">
+            <div class="sidebar-brand">
+                <div class="sello-mini">RC</div>
+                <h1>{{ nombre_clinica }}</h1>
+                <p>Registro Clínico</p>
+            </div>
+            <ul class="nav-lista">
+                <li><a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">
+                    <span class="nav-icono"><i class="fa-solid fa-gauge"></i></span> Inicio</a></li>
+                <li><a href="{{ url_for('nueva_atencion') }}" class="{{ 'activo' if request.endpoint == 'nueva_atencion' }}">
+                    <span class="nav-icono"><i class="fa-solid fa-notes-medical"></i></span> Nueva atención</a></li>
+                <li><a href="{{ url_for('pacientes_hoy') }}" class="{{ 'activo' if request.endpoint == 'pacientes_hoy' }}">
+                    <span class="nav-icono"><i class="fa-solid fa-list-check"></i></span> Atendidos hoy</a></li>
+                <li><a href="{{ url_for('reportes') }}" class="{{ 'activo' if request.endpoint == 'reportes' }}">
+                    <span class="nav-icono"><i class="fa-solid fa-chart-simple"></i></span> Reportes</a></li>
+            </ul>
+            <div class="sidebar-footer">
+                <div class="usuario"><i class="fa-solid fa-circle-user"></i> {{ session.get('usuario', '') }}</div>
+                <a class="salir" href="{{ url_for('logout') }}"><i class="fa-solid fa-arrow-right-from-bracket"></i> Cerrar sesión</a>
+            </div>
+        </aside>
+
+        <main class="main-content">
+            {% with mensajes = get_flashed_messages(with_categories=true) %}
+                {% if mensajes %}
+                    {% for categoria, mensaje in mensajes %}
+                        <div class="alerta {{ categoria }}">{{ mensaje }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            {% block contenido %}{% endblock %}
+        </main>
+    </div>
+
+    {% block scripts %}{% endblock %}
+</body>
+</html>

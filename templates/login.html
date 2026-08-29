@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ingresar — {{ nombre_clinica }}</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+</head>
+<body>
+    <div class="login-page">
+        <div class="login-card">
+            <div class="login-brand">
+                <div class="sello-mini">RC</div>
+                <h1>{{ nombre_clinica }}</h1>
+                <p>Registro clínico diario</p>
+            </div>
+
+            {% with mensajes = get_flashed_messages(with_categories=true) %}
+                {% if mensajes %}
+                    {% for categoria, mensaje in mensajes %}
+                        <div class="alerta {{ categoria }}">{{ mensaje }}</div>
+                    {% endfor %}
+                {% endif %}
+            {% endwith %}
+
+            <form method="POST">
+                <div class="campo">
+                    <label for="usuario">Usuario</label>
+                    <input type="text" id="usuario" name="usuario" required autofocus>
+                </div>
+                <div class="campo">
+                    <label for="clave">Clave</label>
+                    <input type="password" id="clave" name="clave" required>
+                </div>
+                <button type="submit" class="btn btn-primario btn-block">
+                    <i class="fa-solid fa-lock"></i> Ingresar
+                </button>
+            </form>
+        </div>
+    </div>
+</body>
+</html>

@@ -1,0 +1,80 @@
+{% extends "base.html" %}
+{% block titulo %}Reportes — {{ nombre_clinica }}{% endblock %}
+
+{% block contenido %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">Histórico</span>
+        <h2>Reportes</h2>
+        <p class="sub">Consulta y exporta las atenciones de cualquier rango de fechas.</p>
+    </div>
+</div>
+
+<form method="GET" class="filtro-bar">
+    <div class="campo">
+        <label for="desde">Desde</label>
+        <input type="date" id="desde" name="desde" value="{{ desde }}">
+    </div>
+    <div class="campo">
+        <label for="hasta">Hasta</label>
+        <input type="date" id="hasta" name="hasta" value="{{ hasta }}">
+    </div>
+    <button type="submit" class="btn btn-primario"><i class="fa-solid fa-filter"></i> Filtrar</button>
+    <a href="{{ url_for('exportar_rango', desde=desde, hasta=hasta) }}" class="btn btn-dorado">
+        <i class="fa-solid fa-file-excel"></i> Exportar rango
+    </a>
+</form>
+
+<div class="stats-grid" style="grid-template-columns: 1fr 1fr;">
+    <div class="stat-card">
+        <div class="valor">{{ total }}</div>
+        <div class="etiqueta">Atenciones en el rango</div>
+    </div>
+    <div class="stat-card dorado">
+        <div class="valor">{{ pacientes_unicos }}</div>
+        <div class="etiqueta">Pacientes distintos atendidos</div>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body" style="padding: 0;">
+        {% if atenciones %}
+        <div class="tabla-wrap">
+            <table class="tabla">
+                <thead>
+                    <tr>
+                        <th>Fecha</th><th>Hora</th><th>DNI</th><th>Paciente</th>
+                        <th>Motivo</th><th>Diagnóstico</th><th>Estado</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    {% for a in atenciones %}
+                    <tr>
+                        <td class="celda-hora">{{ a.fecha.strftime('%d/%m/%Y') }}</td>
+                        <td class="celda-hora">{{ a.hora }}</td>
+                        <td class="celda-dni">{{ a.paciente.dni }}</td>
+                        <td class="celda-nombre">{{ a.paciente.nombre_completo }}</td>
+                        <td>{{ a.motivo or '—' }}</td>
+                        <td>{{ a.diagnostico or '—' }}</td>
+                        <td>
+                            {% if a.estado == 'Finalizado' %}
+                            <span class="sello finalizado"><span class="punto"></span>Finalizado</span>
+                            {% else %}
+                            <span class="sello proceso"><span class="punto"></span>En proceso</span>
+                            {% endif %}
+                        </td>
+                    </tr>
+                    {% endfor %}
+                </tbody>
+            </table>
+        </div>
+        {% else %}
+        <div class="estado-vacio">
+            <div class="icono"><i class="fa-solid fa-magnifying-glass"></i></div>
+            <p>No hay atenciones registradas en ese rango de fechas.</p>
+            <p class="sub">Prueba ampliando el rango de búsqueda.</p>
+        </div>
+        {% endif %}
+    </div>
+</div>
+{% endblock %}

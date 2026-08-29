@@ -1,0 +1,156 @@
+{% extends "base.html" %}
+{% block titulo %}Nueva atención — {{ nombre_clinica }}{% endblock %}
+
+{% block contenido %}
+<div class="page-header">
+    <div>
+        <span class="eyebrow">{{ hoy.strftime('%d/%m/%Y') }}</span>
+        <h2>Nueva atención</h2>
+        <p class="sub">Busca al paciente por DNI o regístralo si es su primera visita.</p>
+    </div>
+</div>
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" id="form-atencion" autocomplete="off">
+
+            <div class="buscar-dni-row">
+                <div class="campo mono">
+                    <label for="dni">DNI del paciente</label>
+                    <input type="text" id="dni" name="dni" maxlength="8" placeholder="Ej. 70123456" required>
+                </div>
+                <button type="button" id="btn-buscar" class="btn btn-primario">
+                    <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                </button>
+            </div>
+            <div class="info-hint" id="hint-dni"></div>
+
+            <div class="divider-label">Datos del paciente</div>
+
+            <div class="fila-2">
+                <div class="campo">
+                    <label for="nombres">Nombres</label>
+                    <input type="text" id="nombres" name="nombres" placeholder="Ej. Juan Carlos" required>
+                </div>
+                <div class="campo">
+                    <label for="apellidos">Apellidos</label>
+                    <input type="text" id="apellidos" name="apellidos" placeholder="Ej. Pérez Gómez" required>
+                </div>
+            </div>
+
+            <div class="fila-3">
+                <div class="campo">
+                    <label for="fecha_nacimiento">Fecha de nacimiento</label>
+                    <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="dd/mm/aaaa">
+                </div>
+                <div class="campo">
+                    <label for="telefono">Teléfono</label>
+                    <input type="text" id="telefono" name="telefono" placeholder="987654321">
+                </div>
+                <div class="campo">
+                    <label for="sexo">Sexo</label>
+                    <select id="sexo" name="sexo">
+                        <option value="">Seleccionar</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="divider-label">Datos de la consulta</div>
+
+            <div class="campo">
+                <label for="motivo">Motivo de consulta</label>
+                <input type="text" id="motivo" name="motivo" placeholder="Ej. Fiebre y tos">
+            </div>
+            <div class="campo">
+                <label for="sintomas">Síntomas</label>
+                <input type="text" id="sintomas" name="sintomas" placeholder="Ej. Malestar, cefalea">
+            </div>
+            <div class="campo">
+                <label for="diagnostico">Diagnóstico</label>
+                <input type="text" id="diagnostico" name="diagnostico" placeholder="Ej. Faringitis aguda">
+            </div>
+            <div class="campo">
+                <label for="receta">Receta médica</label>
+                <textarea id="receta" name="receta" placeholder="Ej. Paracetamol 500mg cada 8h, Amoxicilina 500mg cada 12h por 7 días"></textarea>
+            </div>
+            <div class="campo">
+                <label for="notas">Notas adicionales</label>
+                <textarea id="notas" name="notas" placeholder="Ej. Reposo por 3 días, control en una semana"></textarea>
+            </div>
+
+            <div class="fila-2">
+                <div class="campo">
+                    <label for="estado">Estado de la atención</label>
+                    <select id="estado" name="estado">
+                        <option value="Finalizado">Finalizado</option>
+                        <option value="En proceso">En proceso</option>
+                    </select>
+                </div>
+                <div></div>
+            </div>
+
+            <button type="submit" class="btn btn-dorado btn-block" style="margin-top: 8px; padding: 13px;">
+                <i class="fa-solid fa-check"></i> Registrar atención
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+document.getElementById('btn-buscar').addEventListener('click', async () => {
+    const dni = document.getElementById('dni').value.trim();
+    const hint = document.getElementById('hint-dni');
+    hint.classList.remove('visible');
+
+    if (!/^\d{8}$/.test(dni)) {
+        hint.textContent = 'El DNI debe tener 8 dígitos.';
+        hint.classList.add('visible');
+        return;
+    }
+
+    const boton = document.getElementById('btn-buscar');
+    const textoOriginal = boton.innerHTML;
+    boton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
+    boton.disabled = true;
+
+    try {
+        const resp = await fetch(`/api/buscar-dni/${dni}`);
+        const data = await resp.json();
+
+        if (data.ok) {
+            document.getElementById('nombres').value = data.nombres || '';
+            document.getElementById('apellidos').value = data.apellidos || '';
+            document.getElementById('fecha_nacimiento').value = data.fecha_nacimiento || '';
+            document.getElementById('telefono').value = data.telefono || '';
+            if (data.sexo) document.getElementById('sexo').value = data.sexo;
+
+            hint.textContent = data.origen === 'base_local'
+                ? 'Paciente encontrado en tus registros.'
+                : 'Datos obtenidos de RENIEC. Verifícalos antes de guardar.';
+            hint.classList.add('visible');
+        } else {
+            hint.textContent = data.info || 'No se encontró el DNI. Completa los datos manualmente.';
+            hint.classList.add('visible');
+            document.getElementById('nombres').focus();
+        }
+    } catch (err) {
+        hint.textContent = 'No se pudo conectar con el servicio de búsqueda. Completa los datos manualmente.';
+        hint.classList.add('visible');
+    } finally {
+        boton.innerHTML = textoOriginal;
+        boton.disabled = false;
+    }
+});
+
+document.getElementById('dni').addEventListener('keydown', (e) => {
+    if (e.key === 'Enter') {
+        e.preventDefault();
+        document.getElementById('btn-buscar').click();
+    }
+});
+</script>
+{% endblock %}
