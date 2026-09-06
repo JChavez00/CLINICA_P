@@ -26,7 +26,7 @@
                 <thead>
                     <tr>
                         <th>Hora</th><th>DNI</th><th>Paciente</th><th>Motivo</th>
-                        <th>Diagnóstico</th><th>Estado</th><th></th>
+                        <th>Diagnóstico</th><th>Estado</th><th></th><th></th>
                     </tr>
                 </thead>
                 <tbody>
@@ -43,6 +43,22 @@
                             {% else %}
                             <span class="sello proceso"><span class="punto"></span>En proceso</span>
                             {% endif %}
+                        </td>
+                        <td>
+                            <button type="button" class="btn-ojo" title="Ver detalle de la consulta"
+                                data-hora="{{ a.hora }}"
+                                data-dni="{{ a.paciente.dni }}"
+                                data-paciente="{{ a.paciente.nombre_completo }}"
+                                data-telefono="{{ a.paciente.telefono or '' }}"
+                                data-direccion="{{ a.paciente.direccion_completa }}"
+                                data-motivo="{{ a.motivo or '' }}"
+                                data-sintomas="{{ a.sintomas or '' }}"
+                                data-diagnostico="{{ a.diagnostico or '' }}"
+                                data-receta="{{ a.receta or '' }}"
+                                data-notas="{{ a.notas or '' }}"
+                                data-estado="{{ a.estado }}">
+                                <i class="fa-solid fa-eye"></i>
+                            </button>
                         </td>
                         <td>
                             <form method="POST" action="{{ url_for('cambiar_estado', atencion_id=a.id) }}">
@@ -66,4 +82,105 @@
         {% endif %}
     </div>
 </div>
+
+<!-- Modal de detalle de la consulta -->
+<div class="modal-overlay" id="modal-detalle">
+    <div class="modal-panel">
+        <div class="modal-header">
+            <div>
+                <span class="eyebrow" id="det-hora"></span>
+                <h3 id="det-paciente"></h3>
+            </div>
+            <button type="button" class="modal-cerrar" id="modal-cerrar-btn" aria-label="Cerrar">
+                <i class="fa-solid fa-xmark"></i>
+            </button>
+        </div>
+        <div class="modal-body">
+            <div class="detalle-fila">
+                <span class="detalle-label">DNI</span>
+                <span class="detalle-valor mono" id="det-dni"></span>
+            </div>
+            <div class="detalle-fila">
+                <span class="detalle-label">Teléfono</span>
+                <span class="detalle-valor" id="det-telefono"></span>
+            </div>
+            <div class="detalle-fila">
+                <span class="detalle-label">Domicilio</span>
+                <span class="detalle-valor" id="det-direccion"></span>
+            </div>
+            <div class="detalle-fila">
+                <span class="detalle-label">Estado</span>
+                <span class="detalle-valor" id="det-estado"></span>
+            </div>
+
+            <div class="divider-label">Consulta</div>
+
+            <div class="detalle-bloque">
+                <span class="detalle-label">Motivo</span>
+                <p id="det-motivo"></p>
+            </div>
+            <div class="detalle-bloque">
+                <span class="detalle-label">Síntomas</span>
+                <p id="det-sintomas"></p>
+            </div>
+            <div class="detalle-bloque">
+                <span class="detalle-label">Diagnóstico</span>
+                <p id="det-diagnostico"></p>
+            </div>
+            <div class="detalle-bloque">
+                <span class="detalle-label">Receta médica</span>
+                <p id="det-receta"></p>
+            </div>
+            <div class="detalle-bloque">
+                <span class="detalle-label">Notas</span>
+                <p id="det-notas"></p>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const modal = document.getElementById('modal-detalle');
+
+function llenar(id, valor) {
+    document.getElementById(id).textContent = valor && valor.trim() ? valor : '—';
+}
+
+document.querySelectorAll('.btn-ojo').forEach((boton) => {
+    boton.addEventListener('click', () => {
+        const d = boton.dataset;
+        document.getElementById('det-hora').textContent = d.hora;
+        document.getElementById('det-paciente').textContent = d.paciente;
+        llenar('det-dni', d.dni);
+        llenar('det-telefono', d.telefono);
+        llenar('det-direccion', d.direccion);
+        llenar('det-motivo', d.motivo);
+        llenar('det-sintomas', d.sintomas);
+        llenar('det-diagnostico', d.diagnostico);
+        llenar('det-receta', d.receta);
+        llenar('det-notas', d.notas);
+
+        const estadoEl = document.getElementById('det-estado');
+        estadoEl.innerHTML = d.estado === 'Finalizado'
+            ? '<span class="sello finalizado"><span class="punto"></span>Finalizado</span>'
+            : '<span class="sello proceso"><span class="punto"></span>En proceso</span>';
+
+        modal.classList.add('visible');
+    });
+});
+
+function cerrarModal() {
+    modal.classList.remove('visible');
+}
+
+document.getElementById('modal-cerrar-btn').addEventListener('click', cerrarModal);
+modal.addEventListener('click', (e) => {
+    if (e.target === modal) cerrarModal();
+});
+document.addEventListener('keydown', (e) => {
+    if (e.key === 'Escape') cerrarModal();
+});
+</script>
 {% endblock %}

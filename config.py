@@ -1,7 +1,10 @@
 import os
 from datetime import timedelta
 
+from dotenv import load_dotenv
+
 basedir = os.path.abspath(os.path.dirname(__file__))
+load_dotenv(os.path.join(basedir, ".env"))
 
 
 class Config:
@@ -40,3 +43,16 @@ class Config:
 
     # Nombre del consultorio / clínica, se muestra en la interfaz.
     NOMBRE_CLINICA = os.environ.get("NOMBRE_CLINICA", "Consultorio Médico")
+
+    # Clave de Google Maps (solo se usa para DIBUJAR el mapa y el pin
+    # arrastrable). La búsqueda de direcciones NO usa Google, usa Nominatim
+    # (gratis, ver services/geocodificacion.py), así que esta clave solo
+    # necesita tener habilitada "Maps JavaScript API".
+    # Si la dejas vacía, el formulario sigue funcionando pero sin el mapa
+    # visual (se puede seguir escribiendo la dirección igual).
+    GOOGLE_MAPS_API_KEY = os.environ.get("GOOGLE_MAPS_API_KEY", "")
+
+    # Centro por defecto del mapa cuando aún no hay ninguna dirección
+    # escrita. Por defecto: Tarma, Junín. Ajusta a la ciudad de tu consultorio.
+    MAPA_LAT_DEFECTO = float(os.environ.get("MAPA_LAT_DEFECTO", "-11.4189"))
+    MAPA_LNG_DEFECTO = float(os.environ.get("MAPA_LNG_DEFECTO", "-75.6910"))

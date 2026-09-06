@@ -17,6 +17,16 @@ class Paciente(db.Model):
     fecha_nacimiento = db.Column(db.String(20))  # texto libre: dd/mm/aaaa
     sexo = db.Column(db.String(20))
     telefono = db.Column(db.String(30))
+
+    # --- Domicilio (para el mapa y futuros reportes por zona) ---
+    departamento = db.Column(db.String(80))
+    provincia = db.Column(db.String(80))
+    distrito = db.Column(db.String(80), index=True)  # index: se filtrará seguido en reportes
+    tipo_via = db.Column(db.String(30))
+    nombre_via = db.Column(db.String(150))
+    latitud = db.Column(db.Float)
+    longitud = db.Column(db.Float)
+
     creado_en = db.Column(db.DateTime, default=datetime.utcnow)
 
     atenciones = db.relationship(
@@ -27,6 +37,16 @@ class Paciente(db.Model):
     def nombre_completo(self):
         return f"{self.nombres} {self.apellidos}".strip()
 
+    @property
+    def direccion_completa(self):
+        via = f"{self.tipo_via or ''} {self.nombre_via or ''}".strip()
+        partes = [p for p in [via, self.distrito, self.provincia, self.departamento] if p]
+        return ", ".join(partes) if partes else ""
+
+    @property
+    def tiene_ubicacion(self):
+        return self.latitud is not None and self.longitud is not None
+
     def to_dict(self):
         return {
             "dni": self.dni,
@@ -35,6 +55,13 @@ class Paciente(db.Model):
             "fecha_nacimiento": self.fecha_nacimiento,
             "sexo": self.sexo,
             "telefono": self.telefono,
+            "departamento": self.departamento,
+            "provincia": self.provincia,
+            "distrito": self.distrito,
+            "tipo_via": self.tipo_via,
+            "nombre_via": self.nombre_via,
+            "latitud": self.latitud,
+            "longitud": self.longitud,
         }
 
 

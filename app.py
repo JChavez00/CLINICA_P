@@ -15,6 +15,7 @@ from sqlalchemy import func
 from config import Config
 from models import db, Paciente, Atencion
 from services.reniec import consultar_dni
+from services.geocodificacion import buscar_direccion
 
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
@@ -122,6 +123,13 @@ def create_app():
                 "fecha_nacimiento": paciente.fecha_nacimiento or "",
                 "telefono": paciente.telefono or "",
                 "sexo": paciente.sexo or "",
+                "departamento": paciente.departamento or "",
+                "provincia": paciente.provincia or "",
+                "distrito": paciente.distrito or "",
+                "tipo_via": paciente.tipo_via or "",
+                "nombre_via": paciente.nombre_via or "",
+                "latitud": paciente.latitud,
+                "longitud": paciente.longitud,
                 "es_nuevo": False,
             })
 
@@ -157,6 +165,19 @@ def create_app():
         })
 
     # ---------------------------------------------------------------
+    # Buscar dirección (AJAX) — proxy hacia Nominatim/OpenStreetMap
+    # ---------------------------------------------------------------
+    @app.route("/api/buscar-direccion")
+    @login_requerido
+    def buscar_direccion_ruta():
+        consulta = request.args.get("q", "").strip()
+        if not consulta:
+            return jsonify({"ok": False, "error": "Escribe al menos parte de la dirección."})
+
+        resultado = buscar_direccion(consulta)
+        return jsonify(resultado)
+
+    # ---------------------------------------------------------------
     # Nueva atención
     # ---------------------------------------------------------------
     @app.route("/nueva-atencion", methods=["GET", "POST"])
@@ -169,6 +190,17 @@ def create_app():
             fecha_nacimiento = request.form.get("fecha_nacimiento", "").strip()
             telefono = request.form.get("telefono", "").strip()
             sexo = request.form.get("sexo", "").strip()
+
+            # Domicilio
+            departamento = request.form.get("departamento", "").strip().title()
+            provincia = request.form.get("provincia", "").strip().title()
+            distrito = request.form.get("distrito", "").strip().title()
+            tipo_via = request.form.get("tipo_via", "").strip()
+            nombre_via = request.form.get("nombre_via", "").strip()
+            latitud = request.form.get("latitud", "").strip()
+            longitud = request.form.get("longitud", "").strip()
+            latitud = float(latitud) if latitud else None
+            longitud = float(longitud) if longitud else None
 
             if not dni or not nombres or not apellidos:
                 flash("DNI, nombres y apellidos son obligatorios.", "error")
@@ -184,10 +216,27 @@ def create_app():
                     paciente.telefono = telefono
                 if sexo:
                     paciente.sexo = sexo
+                if departamento:
+                    paciente.departamento = departamento
+                if provincia:
+                    paciente.provincia = provincia
+                if distrito:
+                    paciente.distrito = distrito
+                if tipo_via:
+                    paciente.tipo_via = tipo_via
+                if nombre_via:
+                    paciente.nombre_via = nombre_via
+                if latitud is not None:
+                    paciente.latitud = latitud
+                if longitud is not None:
+                    paciente.longitud = longitud
             else:
                 paciente = Paciente(
                     dni=dni, nombres=nombres, apellidos=apellidos,
                     fecha_nacimiento=fecha_nacimiento, telefono=telefono, sexo=sexo,
+                    departamento=departamento, provincia=provincia, distrito=distrito,
+                    tipo_via=tipo_via, nombre_via=nombre_via,
+                    latitud=latitud, longitud=longitud,
                 )
                 db.session.add(paciente)
                 db.session.flush()  # asigna id sin cerrar la transacción
@@ -211,7 +260,13 @@ def create_app():
             flash(f"Atención registrada para {paciente.nombre_completo}.", "success")
             return redirect(url_for("pacientes_hoy"))
 
-        return render_template("nueva_atencion.html", hoy=date.today())
+        return render_template(
+            "nueva_atencion.html",
+            hoy=date.today(),
+            google_maps_key=app.config["GOOGLE_MAPS_API_KEY"],
+            mapa_lat_defecto=app.config["MAPA_LAT_DEFECTO"],
+            mapa_lng_defecto=app.config["MAPA_LNG_DEFECTO"],
+        )
 
     # ---------------------------------------------------------------
     # Pacientes atendidos hoy
@@ -262,6 +317,13 @@ def create_app():
         total = len(atenciones)
         pacientes_unicos = len({a.paciente_id for a in atenciones})
 
+        # Puntos para el mapa de calor: solo pacientes con ubicación guardada.
+        puntos_mapa = [
+            {"lat": a.paciente.latitud, "lng": a.paciente.longitud}
+            for a in atenciones
+            if a.paciente and a.paciente.tiene_ubicacion
+        ]
+
         return render_template(
             "reportes.html",
             atenciones=atenciones,
@@ -269,6 +331,10 @@ def create_app():
             hasta=hasta_str,
             total=total,
             pacientes_unicos=pacientes_unicos,
+            puntos_mapa=puntos_mapa,
+            google_maps_key=app.config["GOOGLE_MAPS_API_KEY"],
+            mapa_lat_defecto=app.config["MAPA_LAT_DEFECTO"],
+            mapa_lng_defecto=app.config["MAPA_LNG_DEFECTO"],
         )
 
     # ---------------------------------------------------------------
@@ -280,8 +346,10 @@ def create_app():
         ws.title = "Atenciones"
 
         encabezados = [
-            "Fecha", "Hora", "DNI", "Paciente", "Teléfono", "Motivo",
-            "Síntomas", "Diagnóstico", "Receta médica", "Notas", "Estado",
+            "Fecha", "Hora", "DNI", "Paciente", "Teléfono",
+            "Departamento", "Provincia", "Distrito", "Dirección",
+            "Latitud", "Longitud",
+            "Motivo", "Síntomas", "Diagnóstico", "Receta médica", "Notas", "Estado",
         ]
         ws.append(encabezados)
 
@@ -294,12 +362,20 @@ def create_app():
             celda.alignment = Alignment(horizontal="center", vertical="center")
 
         for a in atenciones:
+            p = a.paciente
+            via = f"{p.tipo_via or ''} {p.nombre_via or ''}".strip() if p else ""
             ws.append([
                 a.fecha.strftime("%d/%m/%Y") if a.fecha else "",
                 a.hora or "",
-                a.paciente.dni if a.paciente else "",
-                a.paciente.nombre_completo if a.paciente else "",
-                a.paciente.telefono if a.paciente else "",
+                p.dni if p else "",
+                p.nombre_completo if p else "",
+                p.telefono if p else "",
+                p.departamento if p else "",
+                p.provincia if p else "",
+                p.distrito if p else "",
+                via,
+                p.latitud if p and p.latitud is not None else "",
+                p.longitud if p and p.longitud is not None else "",
                 a.motivo or "",
                 a.sintomas or "",
                 a.diagnostico or "",
@@ -308,7 +384,7 @@ def create_app():
                 a.estado or "",
             ])
 
-        anchos = [12, 8, 12, 26, 14, 22, 22, 22, 30, 25, 14]
+        anchos = [12, 8, 12, 26, 14, 14, 14, 16, 22, 12, 12, 22, 22, 22, 30, 25, 14]
         for i, ancho in enumerate(anchos, start=1):
             ws.column_dimensions[openpyxl.utils.get_column_letter(i)].width = ancho
 

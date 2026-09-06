@@ -57,6 +57,70 @@
                 </div>
             </div>
 
+            <div class="divider-label">Domicilio</div>
+
+            <div class="fila-3">
+                <div class="campo campo-direccion">
+                    <label for="departamento">Departamento</label>
+                    <input type="text" id="departamento" name="departamento" placeholder="Ej. Junín">
+                </div>
+                <div class="campo campo-direccion">
+                    <label for="provincia">Provincia</label>
+                    <input type="text" id="provincia" name="provincia" placeholder="Ej. Tarma">
+                </div>
+                <div class="campo campo-direccion">
+                    <label for="distrito">Distrito</label>
+                    <input type="text" id="distrito" name="distrito" placeholder="Ej. Tarma">
+                </div>
+            </div>
+
+            <div class="fila-via">
+                <div class="campo campo-direccion">
+                    <label for="tipo_via">Tipo de vía</label>
+                    <select id="tipo_via" name="tipo_via" class="campo-direccion">
+                        <option value="">Seleccionar</option>
+                        <option value="Avenida">Avenida</option>
+                        <option value="Jirón">Jirón</option>
+                        <option value="Calle">Calle</option>
+                        <option value="Pasaje">Pasaje</option>
+                        <option value="Carretera">Carretera</option>
+                    </select>
+                </div>
+                <div class="campo campo-direccion">
+                    <label for="nombre_via">Nombre de vía y número</label>
+                    <input type="text" id="nombre_via" name="nombre_via" placeholder="Ej. Jauja 123">
+                </div>
+            </div>
+
+            {% if google_maps_key %}
+            <div class="campo">
+                <label>Ubicación en el mapa</label>
+                <div id="mapa"></div>
+                <div class="mapa-atribucion">
+                    Búsqueda de direcciones: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
+                </div>
+                <div class="info-hint" id="hint-direccion"></div>
+                <input type="hidden" id="latitud" name="latitud">
+                <input type="hidden" id="longitud" name="longitud">
+            </div>
+            {% else %}
+            <div class="campo">
+                <div class="alerta info" style="margin-bottom: 14px;">
+                    El mapa no está configurado (falta GOOGLE_MAPS_API_KEY). Puedes ingresar las coordenadas a mano si las tienes, o dejarlas vacías.
+                </div>
+                <div class="fila-2">
+                    <div class="campo" style="margin-bottom:0;">
+                        <label for="latitud">Latitud (opcional)</label>
+                        <input type="text" id="latitud" name="latitud" placeholder="Ej. -11.4189">
+                    </div>
+                    <div class="campo" style="margin-bottom:0;">
+                        <label for="longitud">Longitud (opcional)</label>
+                        <input type="text" id="longitud" name="longitud" placeholder="Ej. -75.6910">
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
             <div class="divider-label">Datos de la consulta</div>
 
             <div class="campo">
@@ -101,6 +165,9 @@
 
 {% block scripts %}
 <script>
+// ================================================================
+// BÚSQUEDA POR DNI
+// ================================================================
 document.getElementById('btn-buscar').addEventListener('click', async () => {
     const dni = document.getElementById('dni').value.trim();
     const hint = document.getElementById('hint-dni');
@@ -128,6 +195,22 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
             document.getElementById('telefono').value = data.telefono || '';
             if (data.sexo) document.getElementById('sexo').value = data.sexo;
 
+            // Domicilio guardado previamente (si ya es paciente conocido)
+            if (document.getElementById('departamento')) {
+                document.getElementById('departamento').value = data.departamento || '';
+                document.getElementById('provincia').value = data.provincia || '';
+                document.getElementById('distrito').value = data.distrito || '';
+                document.getElementById('tipo_via').value = data.tipo_via || '';
+                document.getElementById('nombre_via').value = data.nombre_via || '';
+            }
+            if (data.latitud && data.longitud) {
+                actualizarCoordenadas(data.latitud, data.longitud, true);
+                if (typeof mapaGoogle !== 'undefined' && mapaGoogle) {
+                    mapaGoogle.setCenter({ lat: data.latitud, lng: data.longitud });
+                    mapaGoogle.setZoom(17);
+                }
+            }
+
             hint.textContent = data.origen === 'base_local'
                 ? 'Paciente encontrado en tus registros.'
                 : 'Datos obtenidos de RENIEC. Verifícalos antes de guardar.';
@@ -152,5 +235,129 @@ document.getElementById('dni').addEventListener('keydown', (e) => {
         document.getElementById('btn-buscar').click();
     }
 });
+
+// ================================================================
+// MAPA DE DOMICILIO (solo si hay clave de Google Maps configurada)
+// ================================================================
+{% if google_maps_key %}
+let mapaGoogle = null;
+let marcadorGoogle = null;
+let controladorBusquedaDireccion = null;
+let temporizadorDireccion = null;
+
+function actualizarCoordenadas(lat, lng, confirmado) {
+    document.getElementById('latitud').value = Number(lat).toFixed(6);
+    document.getElementById('longitud').value = Number(lng).toFixed(6);
+    if (marcadorGoogle) {
+        marcadorGoogle.setPosition({ lat: Number(lat), lng: Number(lng) });
+        // Pin más transparente = ubicación aún no confirmada por una búsqueda
+        // exitosa ni ajustada a mano. Es una señal visual simple para no
+        // guardar coordenadas erróneas sin que la persona se dé cuenta.
+        marcadorGoogle.setOpacity(confirmado ? 1 : 0.5);
+    }
+}
+
+function mostrarHintDireccion(texto, esError) {
+    const hint = document.getElementById('hint-direccion');
+    hint.textContent = texto;
+    hint.style.color = esError ? 'var(--rojo-suave)' : 'var(--dorado)';
+    hint.classList.add('visible');
+}
+
+function iniciarMapaDomicilio() {
+    const centro = { lat: {{ mapa_lat_defecto }}, lng: {{ mapa_lng_defecto }} };
+
+    mapaGoogle = new google.maps.Map(document.getElementById('mapa'), {
+        zoom: 13,
+        center: centro,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+    });
+
+    // NOTA: google.maps.Marker está marcado como "deprecado" por Google a
+    // favor de AdvancedMarkerElement, pero sigue funcionando sin problema.
+    marcadorGoogle = new google.maps.Marker({
+        position: centro,
+        map: mapaGoogle,
+        draggable: true,
+        opacity: 0.5,
+    });
+
+    actualizarCoordenadas(centro.lat, centro.lng, false);
+
+    marcadorGoogle.addListener('dragend', () => {
+        const pos = marcadorGoogle.getPosition();
+        actualizarCoordenadas(pos.lat(), pos.lng(), true);
+        mostrarHintDireccion('Ubicación ajustada manualmente. Lista para guardar.', false);
+    });
+}
+
+function buscarDireccionProgresiva() {
+    clearTimeout(temporizadorDireccion);
+
+    // Nominatim pide máximo 1 solicitud por segundo; 1000ms de espera
+    // después de que la persona deja de escribir respeta ese límite.
+    temporizadorDireccion = setTimeout(async () => {
+        const dep = document.getElementById('departamento').value.trim();
+        const prov = document.getElementById('provincia').value.trim();
+        const dist = document.getElementById('distrito').value.trim();
+        const tipoVia = document.getElementById('tipo_via').value.trim();
+        const via = document.getElementById('nombre_via').value.trim();
+
+        const fragmentos = [];
+        if (via) fragmentos.push(`${tipoVia} ${via}`.trim());
+        if (dist) fragmentos.push(dist);
+        if (prov) fragmentos.push(prov);
+        if (dep) fragmentos.push(dep);
+        if (fragmentos.length === 0) return;
+
+        const direccionCompleta = fragmentos.join(', ');
+
+        let nivelZoom = 8;
+        if (prov) nivelZoom = 11;
+        if (dist) nivelZoom = 14;
+        if (via) nivelZoom = 17;
+
+        // Cancela la búsqueda anterior si todavía estaba en camino, para
+        // que una respuesta lenta y vieja no sobrescriba a una más nueva.
+        if (controladorBusquedaDireccion) controladorBusquedaDireccion.abort();
+        controladorBusquedaDireccion = new AbortController();
+
+        try {
+            const resp = await fetch(
+                `/api/buscar-direccion?q=${encodeURIComponent(direccionCompleta)}`,
+                { signal: controladorBusquedaDireccion.signal }
+            );
+            const datos = await resp.json();
+
+            if (datos.ok) {
+                mapaGoogle.setCenter({ lat: datos.latitud, lng: datos.longitud });
+                mapaGoogle.setZoom(nivelZoom);
+                actualizarCoordenadas(datos.latitud, datos.longitud, true);
+                mostrarHintDireccion('Dirección encontrada. Ajusta el pin si no cae exacto.', false);
+            } else {
+                mostrarHintDireccion(
+                    datos.error || 'No se encontró esa dirección. Ajusta el pin manualmente.',
+                    true
+                );
+            }
+        } catch (err) {
+            if (err.name !== 'AbortError') {
+                mostrarHintDireccion('No se pudo buscar la dirección. Ajusta el pin manualmente.', true);
+            }
+        }
+    }, 1000);
+}
+
+document.querySelectorAll('.campo-direccion').forEach((campo) => {
+    campo.addEventListener('input', buscarDireccionProgresiva);
+});
+{% endif %}
 </script>
+{% if google_maps_key %}
+<script async defer
+    src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=iniciarMapaDomicilio">
+</script>
+{% endif %}
 {% endblock %}
