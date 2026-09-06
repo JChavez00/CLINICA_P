@@ -1,0 +1,332 @@
+{% extends "base.html" %}
+{% block titulo %}Evaluación API — {{ nombre_clinica }}{% endblock %}
+
+{% block contenido %}
+<div class="page-header" style="background-color: #fff3cd; padding: 20px; border-radius: 8px; border-left: 5px solid #ffc107; margin-bottom: 20px;">
+    <div>
+        <h2 style="color: #856404; margin-top: 5px;">Evaluación de APIs (RENIEC y Google Maps)</h2>
+    </div>
+</div>
+
+{% with messages = get_flashed_messages(with_categories=true) %}
+  {% if messages %}
+    {% for category, message in messages %}
+      <div class="alerta {{ category }}" style="background-color: #d1e7dd; color: #0f5132; padding: 15px; border-radius: 5px; margin-bottom: 20px; border-left: 5px solid #198754;">
+        {{ message }}
+      </div>
+    {% endfor %}
+  {% endif %}
+{% endwith %}
+
+<div class="card">
+    <div class="card-body">
+        <form method="POST" id="form-atencion" autocomplete="off" action="{{ url_for('tarea_prueba_api') }}">
+
+            <!-- BÚSQUEDA RENIEC -->
+            <div class="buscar-dni-row">
+                <div class="campo mono">
+                    <label for="dni">DNI del paciente</label>
+                    <input type="text" id="dni" name="dni" maxlength="8" placeholder="Ej. 70123456" required>
+                </div>
+                <button type="button" id="btn-buscar" class="btn btn-primario">
+                    <i class="fa-solid fa-magnifying-glass"></i> Buscar
+                </button>
+            </div>
+            <div class="info-hint" id="hint-dni"></div>
+
+            <div class="divider-label">Datos del paciente</div>
+
+            <div class="fila-2">
+                <div class="campo">
+                    <label for="nombres">Nombres</label>
+                    <input type="text" id="nombres" name="nombres" placeholder="Ej. Juan Carlos" required>
+                </div>
+                <div class="campo">
+                    <label for="apellidos">Apellidos</label>
+                    <input type="text" id="apellidos" name="apellidos" placeholder="Ej. Pérez Gómez" required>
+                </div>
+            </div>
+
+            <div class="fila-3">
+                <div class="campo">
+                    <label for="fecha_nacimiento">Fecha de nacimiento</label>
+                    <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="dd/mm/aaaa">
+                </div>
+                <div class="campo">
+                    <label for="telefono">Teléfono</label>
+                    <input type="text" id="telefono" name="telefono" placeholder="987654321">
+                </div>
+                <div class="campo">
+                    <label for="sexo">Sexo</label>
+                    <select id="sexo" name="sexo">
+                        <option value="">Seleccionar</option>
+                        <option value="Masculino">Masculino</option>
+                        <option value="Femenino">Femenino</option>
+                    </select>
+                </div>
+            </div>
+
+            <div class="divider-label">Domicilio y Mapa Híbrido</div>
+
+            <div class="fila-3">
+                <div class="campo campo-direccion">
+                    <label for="departamento">Departamento</label>
+                    <input type="text" id="departamento" name="departamento" placeholder="Ej. Junín">
+                </div>
+                <div class="campo campo-direccion">
+                    <label for="provincia">Provincia</label>
+                    <input type="text" id="provincia" name="provincia" placeholder="Ej. Tarma">
+                </div>
+                <div class="campo campo-direccion">
+                    <label for="distrito">Distrito</label>
+                    <input type="text" id="distrito" name="distrito" placeholder="Ej. Tarma">
+                </div>
+            </div>
+
+            <div class="fila-via">
+                <div class="campo campo-direccion" style="flex: 0.4;">
+                    <label for="tipo_via">Tipo de vía</label>
+                    <select id="tipo_via" name="tipo_via" class="campo-direccion">
+                        <option value="">Seleccionar</option>
+                        <option value="Avenida">Avenida</option>
+                        <option value="Jirón">Jirón</option>
+                        <option value="Calle">Calle</option>
+                        <option value="Pasaje">Pasaje</option>
+                        <option value="Carretera">Carretera</option>
+                    </select>
+                </div>
+                <div class="campo campo-direccion" style="flex: 1.6;">
+                    <label for="nombre_via">Nombre de vía y número</label>
+                    <input type="text" id="nombre_via" name="nombre_via" placeholder="Ej. Jauja 123">
+                </div>
+            </div>
+
+            {% if google_maps_key %}
+            <div class="campo">
+                <label>Ubicación en el mapa</label>
+                <div id="mapa" style="height: 400px; width: 100%; border-radius: 8px; border: 1px solid #ced4da;"></div>
+                <div class="info-hint" id="hint-direccion"></div>
+                
+                <!-- Visibles temporalmente para la tarea -->
+                <div class="fila-2" style="background: #e9ecef; padding: 10px; border-radius: 5px; margin-top: 10px;">
+                    <div class="campo" style="margin-bottom:0;">
+                        <label>Latitud capturada:</label>
+                        <input type="text" id="latitud" name="latitud" readonly>
+                    </div>
+                    <div class="campo" style="margin-bottom:0;">
+                        <label>Longitud capturada:</label>
+                        <input type="text" id="longitud" name="longitud" readonly>
+                    </div>
+                </div>
+            </div>
+            {% endif %}
+
+            <div class="divider-label">Datos de la consulta</div>
+
+            <div class="campo">
+                <label for="motivo">Motivo de consulta</label>
+                <input type="text" id="motivo" name="motivo" placeholder="Ej. Fiebre y tos" required>
+            </div>
+            <div class="campo">
+                <label for="sintomas">Síntomas</label>
+                <input type="text" id="sintomas" name="sintomas" placeholder="Ej. Malestar, cefalea">
+            </div>
+            <div class="campo">
+                <label for="diagnostico">Diagnóstico</label>
+                <input type="text" id="diagnostico" name="diagnostico" placeholder="Ej. Faringitis aguda">
+            </div>
+
+            <button type="submit" class="btn btn-dorado btn-block" style="margin-top: 15px; padding: 13px;">
+                <i class="fa-solid fa-paper-plane"></i> Enviar Prueba al Servidor
+            </button>
+        </form>
+    </div>
+</div>
+{% endblock %}
+
+{% block scripts %}
+<script>
+// ================================================================
+// LÓGICA DE API RENIEC (Idéntica a la original)
+// ================================================================
+document.getElementById('btn-buscar').addEventListener('click', async () => {
+    const dni = document.getElementById('dni').value.trim();
+    const hint = document.getElementById('hint-dni');
+    hint.classList.remove('visible');
+
+    if (!/^\d{8}$/.test(dni)) {
+        hint.textContent = 'El DNI debe tener 8 dígitos.';
+        hint.classList.add('visible');
+        return;
+    }
+
+    const boton = document.getElementById('btn-buscar');
+    const textoOriginal = boton.innerHTML;
+    boton.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Buscando...';
+    boton.disabled = true;
+
+    try {
+        const resp = await fetch(`/api/buscar-dni/${dni}`);
+        const data = await resp.json();
+
+        if (data.ok) {
+            document.getElementById('nombres').value = data.nombres || '';
+            document.getElementById('apellidos').value = data.apellidos || '';
+            document.getElementById('fecha_nacimiento').value = data.fecha_nacimiento || '';
+            document.getElementById('telefono').value = data.telefono || '';
+            if (data.sexo) document.getElementById('sexo').value = data.sexo;
+
+            hint.textContent = 'Datos obtenidos de RENIEC/Base de datos exitosamente.';
+            hint.classList.add('visible');
+        } else {
+            hint.textContent = 'No se encontró el DNI. Completa los datos manualmente.';
+            hint.classList.add('visible');
+        }
+    } catch (err) {
+        hint.textContent = 'No se pudo conectar con el servicio de búsqueda.';
+        hint.classList.add('visible');
+    } finally {
+        boton.innerHTML = textoOriginal;
+        boton.disabled = false;
+    }
+});
+
+// ================================================================
+// LÓGICA DE MAPA PROGRESIVO Y GOOGLE MAPS 
+// ================================================================
+{% if google_maps_key %}
+let mapaGoogle = null;
+let marcadorGoogle = null;
+let controladorBusquedaDireccion = null;
+let temporizadorDireccion = null;
+
+function actualizarCoordenadas(lat, lng) {
+    document.getElementById('latitud').value = Number(lat).toFixed(6);
+    document.getElementById('longitud').value = Number(lng).toFixed(6);
+}
+
+function iniciarMapaDomicilio() {
+    const centro = { lat: {{ mapa_lat_defecto }}, lng: {{ mapa_lng_defecto }} };
+
+    mapaGoogle = new google.maps.Map(document.getElementById('mapa'), {
+        zoom: 13,
+        center: centro,
+        streetViewControl: false,
+        mapTypeControl: false,
+        fullscreenControl: false,
+    });
+
+    marcadorGoogle = new google.maps.Marker({
+        position: centro,
+        map: mapaGoogle,
+        draggable: true
+    });
+
+    actualizarCoordenadas(centro.lat, centro.lng);
+
+    marcadorGoogle.addListener('dragend', async () => {
+        const pos = marcadorGoogle.getPosition();
+        const lat = pos.lat();
+        const lng = pos.lng();
+        actualizarCoordenadas(lat, lng);
+        
+        const hint = document.getElementById('hint-direccion');
+        hint.textContent = '📍 Leyendo la calle desde el mapa...';
+        hint.classList.add('visible');
+
+        try {
+            // Consulta inversa a OpenStreetMap (gratis)
+            const url = `https://nominatim.openstreetmap.org/reverse?format=json&lat=${lat}&lon=${lng}&addressdetails=1`;
+            const resp = await fetch(url);
+            const data = await resp.json();
+
+            if (data && data.address) {
+                const addr = data.address;
+                
+                // Mapeo automático de los datos a tus casillas
+                document.getElementById('departamento').value = addr.state || addr.region || '';
+                document.getElementById('provincia').value = addr.county || addr.city || '';
+                document.getElementById('distrito').value = addr.village || addr.suburb || addr.town || addr.city_district || '';
+                
+                // Procesar el nombre de la calle
+                let calle = addr.road || addr.pedestrian || '';
+                let tipoViaSelect = document.getElementById('tipo_via');
+                tipoViaSelect.value = ''; // Limpiar selección anterior
+                
+                // Intentar adivinar el "Tipo de Vía" si la API lo devuelve junto
+                calle = calle.toLowerCase();
+                if (calle.startsWith('av') || calle.startsWith('avenida')) {
+                    tipoViaSelect.value = 'Avenida';
+                    calle = calle.replace(/^(av\.?|avenida)\s*/i, '');
+                } else if (calle.startsWith('jr') || calle.startsWith('jirón') || calle.startsWith('jiron')) {
+                    tipoViaSelect.value = 'Jirón';
+                    calle = calle.replace(/^(jr\.?|jir[oó]n)\s*/i, '');
+                } else if (calle.startsWith('calle')) {
+                    tipoViaSelect.value = 'Calle';
+                    calle = calle.replace(/^calle\s*/i, '');
+                } else if (calle.startsWith('psj') || calle.startsWith('pasaje')) {
+                    tipoViaSelect.value = 'Pasaje';
+                    calle = calle.replace(/^(psj\.?|pasaje)\s*/i, '');
+                }
+                
+                // Capitalizar la primera letra del nombre limpio de la vía
+                document.getElementById('nombre_via').value = calle.charAt(0).toUpperCase() + calle.slice(1);
+                
+                hint.textContent = '✅ Dirección autocompletada desde el mapa.';
+            } else {
+                hint.textContent = '⚠️ Ubicación capturada (Zona sin nombre registrado).';
+            }
+        } catch (error) {
+            hint.textContent = '⚠️ Coordenadas guardadas (Error al leer la calle).';
+        }
+    });
+}
+
+function buscarDireccionProgresiva() {
+    clearTimeout(temporizadorDireccion);
+    temporizadorDireccion = setTimeout(async () => {
+        const dep = document.getElementById('departamento').value.trim();
+        const prov = document.getElementById('provincia').value.trim();
+        const dist = document.getElementById('distrito').value.trim();
+        const tipoVia = document.getElementById('tipo_via').value.trim();
+        const via = document.getElementById('nombre_via').value.trim();
+
+        const fragmentos = [];
+        if (via) fragmentos.push(`${tipoVia} ${via}`.trim());
+        if (dist) fragmentos.push(dist);
+        if (prov) fragmentos.push(prov);
+        if (dep) fragmentos.push(dep);
+        if (fragmentos.length === 0) return;
+
+        const direccionCompleta = fragmentos.join(', ');
+        let nivelZoom = 8;
+        if (prov) nivelZoom = 11;
+        if (dist) nivelZoom = 14;
+        if (via) nivelZoom = 17;
+
+        if (controladorBusquedaDireccion) controladorBusquedaDireccion.abort();
+        controladorBusquedaDireccion = new AbortController();
+
+        try {
+            const resp = await fetch(`/api/buscar-direccion?q=${encodeURIComponent(direccionCompleta)}`, { signal: controladorBusquedaDireccion.signal });
+            const datos = await resp.json();
+
+            if (datos.ok) {
+                mapaGoogle.setCenter({ lat: datos.latitud, lng: datos.longitud });
+                mapaGoogle.setZoom(nivelZoom);
+                marcadorGoogle.setPosition({ lat: datos.latitud, lng: datos.longitud });
+                actualizarCoordenadas(datos.latitud, datos.longitud);
+            }
+        } catch (err) {}
+    }, 1000);
+}
+
+document.querySelectorAll('.campo-direccion').forEach((campo) => {
+    campo.addEventListener('input', buscarDireccionProgresiva);
+});
+{% endif %}
+</script>
+{% if google_maps_key %}
+<script async defer src="https://maps.googleapis.com/maps/api/js?key={{ google_maps_key }}&callback=iniciarMapaDomicilio"></script>
+{% endif %}
+{% endblock %}

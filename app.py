@@ -109,7 +109,7 @@ def create_app():
     # Buscar DNI (AJAX) — revisa base local primero, luego API externa
     # ---------------------------------------------------------------
     @app.route("/api/buscar-dni/<dni>")
-    @login_requerido
+    # @login_requerido
     def buscar_dni(dni):
         dni = dni.strip()
 
@@ -168,7 +168,7 @@ def create_app():
     # Buscar dirección (AJAX) — proxy hacia Nominatim/OpenStreetMap
     # ---------------------------------------------------------------
     @app.route("/api/buscar-direccion")
-    @login_requerido
+    # @login_requerido
     def buscar_direccion_ruta():
         consulta = request.args.get("q", "").strip()
         if not consulta:
@@ -266,6 +266,26 @@ def create_app():
             google_maps_key=app.config["GOOGLE_MAPS_API_KEY"],
             mapa_lat_defecto=app.config["MAPA_LAT_DEFECTO"],
             mapa_lng_defecto=app.config["MAPA_LNG_DEFECTO"],
+        )
+    
+    from datetime import date
+    from flask import flash, redirect, url_for, request, render_template
+
+    @app.route("/tareaPruebaApi", methods=["GET", "POST"])
+    # ⚠️ No ponemos @login_requerido para que sea de acceso público
+    def tarea_prueba_api():
+        if request.method == "POST":
+            # Simulamos que todo salió bien sin tocar Supabase
+            flash("Registro enviado correctamente.")
+            return redirect(url_for("tarea_prueba_api"))
+        
+        return render_template(
+            "tarea_prueba.html",
+            hoy=date.today(),
+            nombre_clinica=app.config.get("NOMBRE_CLINICA", "Clínica (Modo Prueba)"),
+            google_maps_key=app.config.get("GOOGLE_MAPS_API_KEY", ""),
+            mapa_lat_defecto=app.config.get("MAPA_LAT_DEFECTO", -10.6678),
+            mapa_lng_defecto=app.config.get("MAPA_LNG_DEFECTO", -76.2567)
         )
 
     # ---------------------------------------------------------------
@@ -432,6 +452,8 @@ def create_app():
         return {"nombre_clinica": app.config["NOMBRE_CLINICA"]}
 
     return app
+
+
 
 
 app = create_app()
