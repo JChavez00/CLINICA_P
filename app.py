@@ -295,12 +295,26 @@ def create_app():
     @login_requerido
     def pacientes_hoy():
         hoy = date.today()
+        fecha_str = request.args.get("fecha", hoy.strftime("%Y-%m-%d"))
+        try:
+            fecha_filtro = datetime.strptime(fecha_str, "%Y-%m-%d").date()
+        except ValueError:
+            fecha_filtro = hoy
+            fecha_str = hoy.strftime("%Y-%m-%d")
+
         atenciones = (
-            Atencion.query.filter(Atencion.fecha == hoy)
+            Atencion.query.filter(Atencion.fecha == fecha_filtro)
             .order_by(Atencion.creado_en.desc())
             .all()
         )
-        return render_template("pacientes_hoy.html", atenciones=atenciones, hoy=hoy)
+        return render_template(
+            "pacientes_hoy.html",
+            atenciones=atenciones,
+            hoy=hoy,
+            fecha_filtro=fecha_filtro,
+            fecha_str=fecha_str,
+            es_hoy=(fecha_filtro == hoy),
+        )
 
     @app.route("/atencion/<int:atencion_id>/estado", methods=["POST"])
     @login_requerido
@@ -310,7 +324,92 @@ def create_app():
         if nuevo_estado in ("Finalizado", "En proceso"):
             atencion.estado = nuevo_estado
             db.session.commit()
-        return redirect(url_for("pacientes_hoy"))
+        return redirect(url_for("pacientes_hoy", fecha=atencion.fecha.strftime("%Y-%m-%d")))
+
+    # ---------------------------------------------------------------
+    # Editar atención (solo mientras está "En proceso")
+    # ---------------------------------------------------------------
+    @app.route("/atencion/<int:atencion_id>/editar", methods=["GET", "POST"])
+    @login_requerido
+    def editar_atencion(atencion_id):
+        atencion = Atencion.query.get_or_404(atencion_id)
+        paciente = atencion.paciente
+
+        # Una atención finalizada no se puede editar directamente: primero
+        # hay que volver a marcarla "En proceso" desde la lista.
+        if atencion.estado != "En proceso":
+            flash("Esta atención ya fue finalizada. Vuelve a marcarla \"En proceso\" para poder editarla.", "error")
+            return redirect(url_for("pacientes_hoy", fecha=atencion.fecha.strftime("%Y-%m-%d")))
+
+        if request.method == "POST":
+            nombres = request.form.get("nombres", "").strip().upper()
+            apellidos = request.form.get("apellidos", "").strip().upper()
+            fecha_nacimiento = request.form.get("fecha_nacimiento", "").strip()
+            telefono = request.form.get("telefono", "").strip()
+            sexo = request.form.get("sexo", "").strip()
+
+            departamento = request.form.get("departamento", "").strip().title()
+            provincia = request.form.get("provincia", "").strip().title()
+            distrito = request.form.get("distrito", "").strip().title()
+            tipo_via = request.form.get("tipo_via", "").strip()
+            nombre_via = request.form.get("nombre_via", "").strip()
+            latitud = request.form.get("latitud", "").strip()
+            longitud = request.form.get("longitud", "").strip()
+            latitud = float(latitud) if latitud else None
+            longitud = float(longitud) if longitud else None
+
+            if not nombres or not apellidos:
+                flash("Nombres y apellidos son obligatorios.", "error")
+                return redirect(url_for("editar_atencion", atencion_id=atencion_id))
+
+            paciente.nombres = nombres
+            paciente.apellidos = apellidos
+            if fecha_nacimiento:
+                paciente.fecha_nacimiento = fecha_nacimiento
+            if telefono:
+                paciente.telefono = telefono
+            if sexo:
+                paciente.sexo = sexo
+            if departamento:
+                paciente.departamento = departamento
+            if provincia:
+                paciente.provincia = provincia
+            if distrito:
+                paciente.distrito = distrito
+            if tipo_via:
+                paciente.tipo_via = tipo_via
+            if nombre_via:
+                paciente.nombre_via = nombre_via
+            if latitud is not None:
+                paciente.latitud = latitud
+            if longitud is not None:
+                paciente.longitud = longitud
+
+            atencion.motivo = request.form.get("motivo", "").strip()
+            atencion.sintomas = request.form.get("sintomas", "").strip()
+            atencion.diagnostico = request.form.get("diagnostico", "").strip()
+            atencion.receta = request.form.get("receta", "").strip()
+            atencion.notas = request.form.get("notas", "").strip()
+
+            nuevo_estado = request.form.get("estado", "En proceso")
+            if nuevo_estado in ("Finalizado", "En proceso"):
+                atencion.estado = nuevo_estado
+
+            db.session.commit()
+
+            flash(f"Atención de {paciente.nombre_completo} actualizada.", "success")
+            return redirect(url_for("pacientes_hoy", fecha=atencion.fecha.strftime("%Y-%m-%d")))
+
+        return render_template(
+            "nueva_atencion.html",
+            hoy=date.today(),
+            google_maps_key=app.config["GOOGLE_MAPS_API_KEY"],
+            mapa_lat_defecto=app.config["MAPA_LAT_DEFECTO"],
+            mapa_lng_defecto=app.config["MAPA_LNG_DEFECTO"],
+            modo_edicion=True,
+            atencion=atencion,
+            paciente=paciente,
+        )
 
     # ---------------------------------------------------------------
     # Reportes (histórico con filtro de fechas)
@@ -337,13 +436,6 @@ def create_app():
         total = len(atenciones)
         pacientes_unicos = len({a.paciente_id for a in atenciones})
 
-        # Puntos para el mapa de calor: solo pacientes con ubicación guardada.
-        puntos_mapa = [
-            {"lat": a.paciente.latitud, "lng": a.paciente.longitud}
-            for a in atenciones
-            if a.paciente and a.paciente.tiene_ubicacion
-        ]
-
         return render_template(
             "reportes.html",
             atenciones=atenciones,
@@ -351,10 +443,6 @@ def create_app():
             hasta=hasta_str,
             total=total,
             pacientes_unicos=pacientes_unicos,
-            puntos_mapa=puntos_mapa,
-            google_maps_key=app.config["GOOGLE_MAPS_API_KEY"],
-            mapa_lat_defecto=app.config["MAPA_LAT_DEFECTO"],
-            mapa_lng_defecto=app.config["MAPA_LNG_DEFECTO"],
         )
 
     # ---------------------------------------------------------------

@@ -572,6 +572,35 @@ table.tabla tbody tr:last-child td { border-bottom: none; }
   border-color: var(--pino);
 }
 
+.acciones-fila {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+}
+
+/* ---------------------------------------------------------- */
+/* BOTÓN LÁPIZ (editar mientras está "en proceso")               */
+/* ---------------------------------------------------------- */
+.btn-lapiz {
+  width: 34px;
+  height: 34px;
+  border-radius: 7px;
+  border: 1.5px solid var(--salvia-borde);
+  background: #fff;
+  color: var(--dorado);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 13px;
+  text-decoration: none;
+  transition: all 0.15s ease;
+}
+.btn-lapiz:hover {
+  background: #FFF8E8;
+  border-color: var(--dorado);
+}
+
 /* ---------------------------------------------------------- */
 /* MODAL DE DETALLE                                              */
 /* ---------------------------------------------------------- */

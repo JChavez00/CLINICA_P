@@ -1,27 +1,38 @@
 {% extends "base.html" %}
-{% block titulo %}Nueva atención — {{ nombre_clinica }}{% endblock %}
+{% block titulo %}{{ 'Editar atención' if modo_edicion else 'Nueva atención' }} — {{ nombre_clinica }}{% endblock %}
 
 {% block contenido %}
 <div class="page-header">
     <div>
         <span class="eyebrow">{{ hoy.strftime('%d/%m/%Y') }}</span>
-        <h2>Nueva atención</h2>
-        <p class="sub">Busca al paciente por DNI o regístralo si es su primera visita.</p>
+        <h2>{{ 'Editar atención' if modo_edicion else 'Nueva atención' }}</h2>
+        <p class="sub">
+            {% if modo_edicion %}
+                Estás editando una atención que sigue "En proceso".
+            {% else %}
+                Busca al paciente por DNI o regístralo si es su primera visita.
+            {% endif %}
+        </p>
     </div>
 </div>
 
 <div class="card">
     <div class="card-body">
-        <form method="POST" id="form-atencion" autocomplete="off">
+        <form method="POST" id="form-atencion" autocomplete="off"
+            action="{{ url_for('editar_atencion', atencion_id=atencion.id) if modo_edicion else url_for('nueva_atencion') }}">
 
             <div class="buscar-dni-row">
                 <div class="campo mono">
                     <label for="dni">DNI del paciente</label>
-                    <input type="text" id="dni" name="dni" maxlength="8" placeholder="Ej. 70123456" required>
+                    <input type="text" id="dni" name="dni" maxlength="8" placeholder="Ej. 70123456"
+                        value="{{ paciente.dni if modo_edicion else '' }}"
+                        {{ 'readonly' if modo_edicion else 'required' }}>
                 </div>
+                {% if not modo_edicion %}
                 <button type="button" id="btn-buscar" class="btn btn-primario">
                     <i class="fa-solid fa-magnifying-glass"></i> Buscar
                 </button>
+                {% endif %}
             </div>
             <div class="info-hint" id="hint-dni"></div>
 
@@ -30,29 +41,33 @@
             <div class="fila-2">
                 <div class="campo">
                     <label for="nombres">Nombres</label>
-                    <input type="text" id="nombres" name="nombres" placeholder="Ej. Juan Carlos" required>
+                    <input type="text" id="nombres" name="nombres" placeholder="Ej. Juan Carlos" required
+                        value="{{ paciente.nombres if modo_edicion else '' }}">
                 </div>
                 <div class="campo">
                     <label for="apellidos">Apellidos</label>
-                    <input type="text" id="apellidos" name="apellidos" placeholder="Ej. Pérez Gómez" required>
+                    <input type="text" id="apellidos" name="apellidos" placeholder="Ej. Pérez Gómez" required
+                        value="{{ paciente.apellidos if modo_edicion else '' }}">
                 </div>
             </div>
 
             <div class="fila-3">
                 <div class="campo">
                     <label for="fecha_nacimiento">Fecha de nacimiento</label>
-                    <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="dd/mm/aaaa">
+                    <input type="text" id="fecha_nacimiento" name="fecha_nacimiento" placeholder="dd/mm/aaaa"
+                        value="{{ paciente.fecha_nacimiento or '' if modo_edicion else '' }}">
                 </div>
                 <div class="campo">
                     <label for="telefono">Teléfono</label>
-                    <input type="text" id="telefono" name="telefono" placeholder="987654321">
+                    <input type="text" id="telefono" name="telefono" placeholder="987654321"
+                        value="{{ paciente.telefono or '' if modo_edicion else '' }}">
                 </div>
                 <div class="campo">
                     <label for="sexo">Sexo</label>
                     <select id="sexo" name="sexo">
                         <option value="">Seleccionar</option>
-                        <option value="Masculino">Masculino</option>
-                        <option value="Femenino">Femenino</option>
+                        <option value="Masculino" {{ 'selected' if modo_edicion and paciente.sexo == 'Masculino' }}>Masculino</option>
+                        <option value="Femenino" {{ 'selected' if modo_edicion and paciente.sexo == 'Femenino' }}>Femenino</option>
                     </select>
                 </div>
             </div>
@@ -62,15 +77,18 @@
             <div class="fila-3">
                 <div class="campo campo-direccion">
                     <label for="departamento">Departamento</label>
-                    <input type="text" id="departamento" name="departamento" placeholder="Ej. Junín">
+                    <input type="text" id="departamento" name="departamento" placeholder="Ej. Junín"
+                        value="{{ paciente.departamento or '' if modo_edicion else '' }}">
                 </div>
                 <div class="campo campo-direccion">
                     <label for="provincia">Provincia</label>
-                    <input type="text" id="provincia" name="provincia" placeholder="Ej. Tarma">
+                    <input type="text" id="provincia" name="provincia" placeholder="Ej. Tarma"
+                        value="{{ paciente.provincia or '' if modo_edicion else '' }}">
                 </div>
                 <div class="campo campo-direccion">
                     <label for="distrito">Distrito</label>
-                    <input type="text" id="distrito" name="distrito" placeholder="Ej. Tarma">
+                    <input type="text" id="distrito" name="distrito" placeholder="Ej. Tarma"
+                        value="{{ paciente.distrito or '' if modo_edicion else '' }}">
                 </div>
             </div>
 
@@ -79,16 +97,17 @@
                     <label for="tipo_via">Tipo de vía</label>
                     <select id="tipo_via" name="tipo_via" class="campo-direccion">
                         <option value="">Seleccionar</option>
-                        <option value="Avenida">Avenida</option>
-                        <option value="Jirón">Jirón</option>
-                        <option value="Calle">Calle</option>
-                        <option value="Pasaje">Pasaje</option>
-                        <option value="Carretera">Carretera</option>
+                        <option value="Avenida" {{ 'selected' if modo_edicion and paciente.tipo_via == 'Avenida' }}>Avenida</option>
+                        <option value="Jirón" {{ 'selected' if modo_edicion and paciente.tipo_via == 'Jirón' }}>Jirón</option>
+                        <option value="Calle" {{ 'selected' if modo_edicion and paciente.tipo_via == 'Calle' }}>Calle</option>
+                        <option value="Pasaje" {{ 'selected' if modo_edicion and paciente.tipo_via == 'Pasaje' }}>Pasaje</option>
+                        <option value="Carretera" {{ 'selected' if modo_edicion and paciente.tipo_via == 'Carretera' }}>Carretera</option>
                     </select>
                 </div>
                 <div class="campo campo-direccion">
                     <label for="nombre_via">Nombre de vía y número</label>
-                    <input type="text" id="nombre_via" name="nombre_via" placeholder="Ej. Jauja 123">
+                    <input type="text" id="nombre_via" name="nombre_via" placeholder="Ej. Jauja 123"
+                        value="{{ paciente.nombre_via or '' if modo_edicion else '' }}">
                 </div>
             </div>
 
@@ -100,8 +119,8 @@
                     Búsqueda de direcciones: © <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener">OpenStreetMap contributors</a>
                 </div>
                 <div class="info-hint" id="hint-direccion"></div>
-                <input type="hidden" id="latitud" name="latitud">
-                <input type="hidden" id="longitud" name="longitud">
+                <input type="hidden" id="latitud" name="latitud" value="{{ paciente.latitud if modo_edicion and paciente.latitud is not none else '' }}">
+                <input type="hidden" id="longitud" name="longitud" value="{{ paciente.longitud if modo_edicion and paciente.longitud is not none else '' }}">
             </div>
             {% else %}
             <div class="campo">
@@ -111,11 +130,13 @@
                 <div class="fila-2">
                     <div class="campo" style="margin-bottom:0;">
                         <label for="latitud">Latitud (opcional)</label>
-                        <input type="text" id="latitud" name="latitud" placeholder="Ej. -11.4189">
+                        <input type="text" id="latitud" name="latitud" placeholder="Ej. -11.4189"
+                            value="{{ paciente.latitud if modo_edicion and paciente.latitud is not none else '' }}">
                     </div>
                     <div class="campo" style="margin-bottom:0;">
                         <label for="longitud">Longitud (opcional)</label>
-                        <input type="text" id="longitud" name="longitud" placeholder="Ej. -75.6910">
+                        <input type="text" id="longitud" name="longitud" placeholder="Ej. -75.6910"
+                            value="{{ paciente.longitud if modo_edicion and paciente.longitud is not none else '' }}">
                     </div>
                 </div>
             </div>
@@ -125,38 +146,41 @@
 
             <div class="campo">
                 <label for="motivo">Motivo de consulta</label>
-                <input type="text" id="motivo" name="motivo" placeholder="Ej. Fiebre y tos">
+                <input type="text" id="motivo" name="motivo" placeholder="Ej. Fiebre y tos"
+                    value="{{ atencion.motivo or '' if modo_edicion else '' }}">
             </div>
             <div class="campo">
                 <label for="sintomas">Síntomas</label>
-                <input type="text" id="sintomas" name="sintomas" placeholder="Ej. Malestar, cefalea">
+                <input type="text" id="sintomas" name="sintomas" placeholder="Ej. Malestar, cefalea"
+                    value="{{ atencion.sintomas or '' if modo_edicion else '' }}">
             </div>
             <div class="campo">
                 <label for="diagnostico">Diagnóstico</label>
-                <input type="text" id="diagnostico" name="diagnostico" placeholder="Ej. Faringitis aguda">
+                <input type="text" id="diagnostico" name="diagnostico" placeholder="Ej. Faringitis aguda"
+                    value="{{ atencion.diagnostico or '' if modo_edicion else '' }}">
             </div>
             <div class="campo">
                 <label for="receta">Receta médica</label>
-                <textarea id="receta" name="receta" placeholder="Ej. Paracetamol 500mg cada 8h, Amoxicilina 500mg cada 12h por 7 días"></textarea>
+                <textarea id="receta" name="receta" placeholder="Ej. Paracetamol 500mg cada 8h, Amoxicilina 500mg cada 12h por 7 días">{{ atencion.receta or '' if modo_edicion else '' }}</textarea>
             </div>
             <div class="campo">
                 <label for="notas">Notas adicionales</label>
-                <textarea id="notas" name="notas" placeholder="Ej. Reposo por 3 días, control en una semana"></textarea>
+                <textarea id="notas" name="notas" placeholder="Ej. Reposo por 3 días, control en una semana">{{ atencion.notas or '' if modo_edicion else '' }}</textarea>
             </div>
 
             <div class="fila-2">
                 <div class="campo">
                     <label for="estado">Estado de la atención</label>
                     <select id="estado" name="estado">
-                        <option value="Finalizado">Finalizado</option>
-                        <option value="En proceso">En proceso</option>
+                        <option value="Finalizado" {{ 'selected' if modo_edicion and atencion.estado == 'Finalizado' }}>Finalizado</option>
+                        <option value="En proceso" {{ 'selected' if not modo_edicion or atencion.estado == 'En proceso' }}>En proceso</option>
                     </select>
                 </div>
                 <div></div>
             </div>
 
             <button type="submit" class="btn btn-dorado btn-block" style="margin-top: 8px; padding: 13px;">
-                <i class="fa-solid fa-check"></i> Registrar atención
+                <i class="fa-solid fa-check"></i> {{ 'Guardar cambios' if modo_edicion else 'Registrar atención' }}
             </button>
         </form>
     </div>
@@ -166,9 +190,11 @@
 {% block scripts %}
 <script>
 // ================================================================
-// BÚSQUEDA POR DNI
+// BÚSQUEDA POR DNI (no aplica en modo edición: el DNI ya está fijo)
 // ================================================================
-document.getElementById('btn-buscar').addEventListener('click', async () => {
+const botonBuscarDni = document.getElementById('btn-buscar');
+if (botonBuscarDni) {
+botonBuscarDni.addEventListener('click', async () => {
     const dni = document.getElementById('dni').value.trim();
     const hint = document.getElementById('hint-dni');
     hint.classList.remove('visible');
@@ -228,11 +254,12 @@ document.getElementById('btn-buscar').addEventListener('click', async () => {
         boton.disabled = false;
     }
 });
+}
 
 document.getElementById('dni').addEventListener('keydown', (e) => {
     if (e.key === 'Enter') {
         e.preventDefault();
-        document.getElementById('btn-buscar').click();
+        if (botonBuscarDni) botonBuscarDni.click();
     }
 });
 
@@ -265,10 +292,16 @@ function mostrarHintDireccion(texto, esError) {
 }
 
 function iniciarMapaDomicilio() {
+    {% if modo_edicion and paciente.latitud is not none and paciente.longitud is not none %}
+    const centro = { lat: {{ paciente.latitud }}, lng: {{ paciente.longitud }} };
+    const yaConfirmado = true;
+    {% else %}
     const centro = { lat: {{ mapa_lat_defecto }}, lng: {{ mapa_lng_defecto }} };
+    const yaConfirmado = false;
+    {% endif %}
 
     mapaGoogle = new google.maps.Map(document.getElementById('mapa'), {
-        zoom: 13,
+        zoom: yaConfirmado ? 17 : 13,
         center: centro,
         streetViewControl: false,
         mapTypeControl: false,
@@ -281,10 +314,10 @@ function iniciarMapaDomicilio() {
         position: centro,
         map: mapaGoogle,
         draggable: true,
-        opacity: 0.5,
+        opacity: yaConfirmado ? 1 : 0.5,
     });
 
-    actualizarCoordenadas(centro.lat, centro.lng, false);
+    actualizarCoordenadas(centro.lat, centro.lng, yaConfirmado);
 
     marcadorGoogle.addListener('dragend', () => {
         const pos = marcadorGoogle.getPosition();

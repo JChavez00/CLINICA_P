@@ -1,12 +1,21 @@
 {% extends "base.html" %}
-{% block titulo %}Atendidos hoy — {{ nombre_clinica }}{% endblock %}
+{% block titulo %}{{ 'Atendidos hoy' if es_hoy else 'Atenciones del ' + fecha_filtro.strftime('%d/%m/%Y') }} — {{ nombre_clinica }}{% endblock %}
 
 {% block contenido %}
 <div class="page-header">
     <div>
-        <span class="eyebrow">{{ hoy.strftime('%d/%m/%Y') }}</span>
-        <h2>Pacientes atendidos hoy <span class="pill-count">{{ atenciones|length }}</span></h2>
-        <p class="sub">Registro del día. Se reinicia automáticamente cada nuevo día.</p>
+        <span class="eyebrow">{{ fecha_filtro.strftime('%d/%m/%Y') }}</span>
+        <h2>
+            {{ 'Pacientes atendidos hoy' if es_hoy else 'Atenciones del ' + fecha_filtro.strftime('%d/%m/%Y') }}
+            <span class="pill-count">{{ atenciones|length }}</span>
+        </h2>
+        <p class="sub">
+            {% if es_hoy %}
+                Registro del día. Cambia la fecha para revisar días anteriores.
+            {% else %}
+                Estás viendo un día anterior. <a href="{{ url_for('pacientes_hoy') }}">Volver a hoy</a>.
+            {% endif %}
+        </p>
     </div>
     <div style="display:flex; gap:10px;">
         <a href="{{ url_for('nueva_atencion') }}" class="btn btn-secundario">
@@ -17,6 +26,14 @@
         </a>
     </div>
 </div>
+
+<form method="GET" class="filtro-bar">
+    <div class="campo">
+        <label for="fecha">Ver atenciones del día</label>
+        <input type="date" id="fecha" name="fecha" value="{{ fecha_str }}" max="{{ hoy.strftime('%Y-%m-%d') }}">
+    </div>
+    <button type="submit" class="btn btn-primario"><i class="fa-solid fa-filter"></i> Ver</button>
+</form>
 
 <div class="card">
     <div class="card-body" style="padding: 0;">
@@ -45,20 +62,27 @@
                             {% endif %}
                         </td>
                         <td>
-                            <button type="button" class="btn-ojo" title="Ver detalle de la consulta"
-                                data-hora="{{ a.hora }}"
-                                data-dni="{{ a.paciente.dni }}"
-                                data-paciente="{{ a.paciente.nombre_completo }}"
-                                data-telefono="{{ a.paciente.telefono or '' }}"
-                                data-direccion="{{ a.paciente.direccion_completa }}"
-                                data-motivo="{{ a.motivo or '' }}"
-                                data-sintomas="{{ a.sintomas or '' }}"
-                                data-diagnostico="{{ a.diagnostico or '' }}"
-                                data-receta="{{ a.receta or '' }}"
-                                data-notas="{{ a.notas or '' }}"
-                                data-estado="{{ a.estado }}">
-                                <i class="fa-solid fa-eye"></i>
-                            </button>
+                            <div class="acciones-fila">
+                                <button type="button" class="btn-ojo" title="Ver detalle de la consulta"
+                                    data-hora="{{ a.hora }}"
+                                    data-dni="{{ a.paciente.dni }}"
+                                    data-paciente="{{ a.paciente.nombre_completo }}"
+                                    data-telefono="{{ a.paciente.telefono or '' }}"
+                                    data-direccion="{{ a.paciente.direccion_completa }}"
+                                    data-motivo="{{ a.motivo or '' }}"
+                                    data-sintomas="{{ a.sintomas or '' }}"
+                                    data-diagnostico="{{ a.diagnostico or '' }}"
+                                    data-receta="{{ a.receta or '' }}"
+                                    data-notas="{{ a.notas or '' }}"
+                                    data-estado="{{ a.estado }}">
+                                    <i class="fa-solid fa-eye"></i>
+                                </button>
+                                {% if a.estado == 'En proceso' %}
+                                <a href="{{ url_for('editar_atencion', atencion_id=a.id) }}" class="btn-lapiz" title="Editar atención (sigue en proceso)">
+                                    <i class="fa-solid fa-pen"></i>
+                                </a>
+                                {% endif %}
+                            </div>
                         </td>
                         <td>
                             <form method="POST" action="{{ url_for('cambiar_estado', atencion_id=a.id) }}">
@@ -76,7 +100,7 @@
         {% else %}
         <div class="estado-vacio">
             <div class="icono"><i class="fa-solid fa-clipboard"></i></div>
-            <p>Todavía no registras ninguna atención hoy.</p>
+            <p>{{ 'Todavía no registras ninguna atención hoy.' if es_hoy else 'No hay atenciones registradas ese día.' }}</p>
             <p class="sub">Usa "Nueva atención" para empezar tu jornada.</p>
         </div>
         {% endif %}
