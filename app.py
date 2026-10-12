@@ -7,7 +7,7 @@ from dotenv import load_dotenv
 load_dotenv()  # carga variables desde .env si existe (solo afecta desarrollo local)
 
 from flask import (
-    Flask, render_template, request, redirect, url_for,
+    Flask, app, render_template, request, redirect, url_for,
     session, flash, jsonify, send_file
 )
 from sqlalchemy import func
@@ -20,6 +20,9 @@ from services.geocodificacion import buscar_direccion
 import openpyxl
 from openpyxl.styles import Font, PatternFill, Alignment
 
+
+from dotenv import load_dotenv
+load_dotenv()
 
 def create_app():
     app = Flask(__name__)
@@ -535,9 +538,46 @@ def create_app():
             mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         )
 
+    
+    @app.route("/ml/predecir/<fecha_str>")
+    @login_requerido
+    def ml_predecir(fecha_str):
+        from ml.predecir_demanda import predecir_demanda
+
+        try:
+            fecha_objetivo = datetime.strptime(
+                fecha_str, "%Y-%m-%d"
+            ).date()
+
+            resultado = predecir_demanda(fecha_objetivo)
+
+            return jsonify({
+                "ok": True,
+                "prediccion": resultado
+            })
+
+        except ValueError:
+            return jsonify({
+                "ok": False,
+                "error": "Fecha inválida. Usa AAAA-MM-DD."
+            }), 400
+
+        except FileNotFoundError:
+            return jsonify({
+                "ok": False,
+                "error": "El modelo aún no está entrenado."
+            }), 503
+
+
     @app.context_processor
     def inject_globals():
         return {"nombre_clinica": app.config["NOMBRE_CLINICA"]}
+
+    from ml.demanda_web import bp_demanda
+    app.register_blueprint(bp_demanda)
+
+    from llm.rutas import bp_asistente
+    app.register_blueprint(bp_asistente)
 
     return app
 

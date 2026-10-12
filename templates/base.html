@@ -24,6 +24,20 @@
                     <span class="nav-icono"><i class="fa-solid fa-list-check"></i></span> Atendidos hoy</a></li>
                 <li><a href="{{ url_for('reportes') }}" class="{{ 'activo' if request.endpoint == 'reportes' }}">
                     <span class="nav-icono"><i class="fa-solid fa-chart-simple"></i></span> Reportes</a></li>
+                <li>
+                    <a href="{{ url_for('demanda.pagina') }}"
+                    class="{{ 'activo' if request.endpoint == 'demanda.pagina' else '' }}">
+                        <i class="fa-solid fa-brain nav-icono"></i>
+                        Predicción de demanda
+                    </a>
+                </li>
+                <li>
+                    <a href="{{ url_for('asistente_ia.pagina') }}"
+                    class="{{ 'activo' if request.endpoint == 'asistente_ia.pagina' else '' }}">
+                        <i class="fa-solid fa-robot nav-icono"></i>
+                        Asistente IA
+                    </a>
+                </li>
             </ul>
             <div class="sidebar-footer">
                 <div class="usuario"><i class="fa-solid fa-circle-user"></i> {{ session.get('usuario', '') }}</div>

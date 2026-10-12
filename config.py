@@ -21,7 +21,7 @@ class Config:
         _database_url = _database_url.replace("postgres://", "postgresql://", 1)
 
     SQLALCHEMY_DATABASE_URI = _database_url or (
-        "sqlite:///" + os.path.join(basedir, "instance", "clinica.db")
+        "sqlite:///" + os.path.join(basedir, "instance", "policlinico_ficticio.db")
     )
     SQLALCHEMY_TRACK_MODIFICATIONS = False
 

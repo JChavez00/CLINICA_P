@@ -1,0 +1,227 @@
+
+{% extends "base.html" %}
+
+{% block titulo %}
+Predicción de demanda — {{ nombre_clinica }}
+{% endblock %}
+
+{% block contenido %}
+
+<link
+    rel="stylesheet"
+    href="{{ url_for('static', filename='css/demanda.css') }}"
+>
+
+<!-- ENCABEZADO -->
+<div class="page-header">
+    <div>
+        <span class="eyebrow">
+            MACHINE LEARNING · YANAHUANCA
+        </span>
+
+        <h2>Predicción de demanda</h2>
+
+        <p class="sub">
+            Analiza el historial de atenciones y consulta
+            las tendencias de demanda estimadas para los
+            próximos días.
+        </p>
+    </div>
+</div>
+
+
+
+<!-- FILTROS DE PREDICCIÓN -->
+<div class="demanda-filtros card">
+
+    <div class="campo">
+        <label for="demanda-fecha">
+            Desde la fecha
+        </label>
+
+        <input
+            type="date"
+            id="demanda-fecha"
+        >
+    </div>
+
+    <div class="campo">
+        <label for="demanda-dias">
+            Horizonte de predicción
+        </label>
+
+        <select id="demanda-dias">
+            <option value="7">Próximos 7 días</option>
+            <option value="15">Próximos 15 días</option>
+            <option value="30">Próximos 30 días</option>
+        </select>
+    </div>
+
+    <button
+        class="btn btn-primario"
+        id="demanda-consultar"
+        type="button"
+    >
+        <i class="fa-solid fa-magnifying-glass-chart"></i>
+        Consultar demanda
+    </button>
+
+</div>
+
+<!-- MENSAJES DE ERROR -->
+<div
+    id="demanda-error"
+    class="alerta error"
+    hidden
+></div>
+
+<!-- INDICADORES PRINCIPALES -->
+<div class="demanda-metricas">
+
+    <div class="stat-card">
+        <div
+            class="valor"
+            id="demanda-total"
+        >
+            —
+        </div>
+
+        <div class="etiqueta">
+            Total de atenciones registradas
+        </div>
+    </div>
+
+    <div class="stat-card dorado">
+        <div
+            class="valor"
+            id="demanda-dias-hist"
+        >
+            —
+        </div>
+
+        <div class="etiqueta">
+            Días analizados en el historial
+        </div>
+    </div>
+
+    <div class="stat-card">
+        <div
+            class="valor"
+            id="demanda-altos"
+        >
+            —
+        </div>
+
+        <div class="etiqueta">
+            Días con demanda alta en el periodo consultado
+        </div>
+    </div>
+
+</div>
+
+<!-- CALENDARIO DE DEMANDA -->
+<div class="card demanda-bloque">
+
+    <div class="card-header">
+
+        <h3>
+            <i class="fa-solid fa-calendar-days"></i>
+            Calendario de demanda
+        </h3>
+
+        <span class="demanda-leyenda">
+            🟢 Baja &nbsp;
+            🟡 Media &nbsp;
+            🔴 Alta
+        </span>
+
+    </div>
+
+    <div class="card-body">
+
+        <div
+            class="demanda-calendario"
+            id="demanda-calendario"
+        ></div>
+
+        <p class="demanda-ayuda">
+            Selecciona una fecha para consultar el nivel
+            de demanda correspondiente. Las fechas futuras
+            muestran estimaciones del modelo y las fechas
+            históricas muestran información registrada.
+        </p>
+
+        <div
+            class="demanda-detalle"
+            id="demanda-detalle"
+        >
+            Selecciona un día del calendario para visualizar
+            su información.
+        </div>
+
+    </div>
+
+</div>
+
+<!-- ANÁLISIS HISTÓRICO -->
+<div class="demanda-columnas">
+
+    <!-- GRÁFICO DE ATENCIONES -->
+    <div class="card">
+
+        <div class="card-header">
+            <h3>
+                <i class="fa-solid fa-chart-column"></i>
+                Evolución de atenciones
+            </h3>
+        </div>
+
+        <div class="card-body">
+
+            <div
+                class="demanda-grafico"
+                id="demanda-grafico"
+            ></div>
+
+            <p class="demanda-ayuda">
+                Distribución de las atenciones registradas
+                durante los últimos 45 días del historial
+                disponible.
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- MOTIVOS FRECUENTES -->
+    <div class="card">
+
+        <div class="card-header">
+            <h3>
+                <i class="fa-solid fa-clipboard-list"></i>
+                Motivos de atención más frecuentes
+            </h3>
+        </div>
+
+        <div class="card-body">
+
+            <div id="demanda-motivos"></div>
+
+            <p class="demanda-ayuda">
+                Principales motivos de consulta registrados
+                durante los últimos 30 días del historial.
+            </p>
+
+        </div>
+
+    </div>
+
+</div>
+
+<!-- JAVASCRIPT DEL MÓDULO -->
+<script
+    src="{{ url_for('static', filename='js/demanda.js') }}"
+    defer
+></script>
+
+{% endblock %}

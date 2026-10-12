@@ -100,3 +100,30 @@ class Atencion(db.Model):
             "notas": self.notas,
             "estado": self.estado,
         }
+
+
+class MLDemandaDiaria(db.Model):
+    __tablename__ = "ml_demanda_diaria"
+
+    id = db.Column(db.Integer, primary_key=True)
+    fecha = db.Column(db.Date, unique=True, nullable=False)
+    total_atenciones = db.Column(db.Integer, nullable=False, default=0)
+    dia_semana = db.Column(db.Integer, nullable=False)
+    mes = db.Column(db.Integer, nullable=False)
+    es_feriado = db.Column(db.Boolean, default=False)
+    nivel_demanda = db.Column(db.String(10))
+
+
+class MLPrediccionDemanda(db.Model):
+    __tablename__ = "ml_predicciones_demanda"
+
+    id = db.Column(db.Integer, primary_key=True)
+    fecha_objetivo = db.Column(db.Date, nullable=False)
+    fecha_prediccion = db.Column(
+        db.DateTime,
+        nullable=False,
+        default=datetime.utcnow
+    )
+    nivel_predicho = db.Column(db.String(10), nullable=False)
+    probabilidad = db.Column(db.Float)
+    modelo_version = db.Column(db.String(20))
