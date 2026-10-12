@@ -1,177 +1,570 @@
-"""Estadísticas agregadas. Nunca envía registros individuales al LLM."""
-from collections import Counter
-from datetime import date, timedelta
-from sqlalchemy import func
-from models import db, Atencion, MLDemandaDiaria
 
+"""Consultas estadísticas y búsqueda de pacientes.
+
+- Las estadísticas agregadas pueden enviarse al LLM.
+- Los datos individuales de pacientes se procesan en Flask.
+- Compatible con SQLite (local) y PostgreSQL (Supabase).
+"""
+
+import re
+import unicodedata
+from datetime import timedelta
+
+from sqlalchemy import func
+
+from models import db, Paciente, Atencion, MLDemandaDiaria
+
+
+# ============================================================
+# 1. FUNCIONES DE COMPATIBILIDAD SQL
+# ============================================================
+
+def _motor_base_datos():
+    """Identifica el motor de base de datos utilizado."""
+    return db.session.get_bind().dialect.name
+
+
+def _expresion_mes(columna_fecha):
+    """Agrupa fechas por año y mes en SQLite o PostgreSQL."""
+    motor = _motor_base_datos()
+
+    if motor == "postgresql":
+        return func.to_char(columna_fecha, "YYYY-MM")
+
+    if motor == "sqlite":
+        return func.strftime("%Y-%m", columna_fecha)
+
+    raise RuntimeError(
+        f"Motor de base de datos no compatible: {motor}"
+    )
+
+
+# ============================================================
+# 2. CONSULTAS ESTADÍSTICAS AGREGADAS
+# ============================================================
 
 def obtener_resumen():
-    # Datos globales y últimos 90 días, agregados exclusivamente.
-    ultima = db.session.query(func.max(Atencion.fecha)).scalar()
-    total = db.session.query(func.count(Atencion.id)).scalar() or 0
+    """Obtiene estadísticas sin exponer registros individuales."""
+
+    ultima = db.session.query(
+        func.max(Atencion.fecha)
+    ).scalar()
+
+    total = db.session.query(
+        func.count(Atencion.id)
+    ).scalar() or 0
+
     if not ultima:
-        return {"total_atenciones": 0, "mensaje": "No hay atenciones registradas."}
+        return {
+            "total_atenciones": 0,
+            "mensaje": "No hay atenciones registradas."
+        }
+
     inicio = ultima - timedelta(days=89)
-    por_mes = (db.session.query(func.strftime('%Y-%m', Atencion.fecha), func.count(Atencion.id))
-               .group_by(func.strftime('%Y-%m', Atencion.fecha))
-               .order_by(func.strftime('%Y-%m', Atencion.fecha).desc()).limit(12).all())
-    por_dia = (db.session.query(Atencion.fecha, func.count(Atencion.id))
-               .filter(Atencion.fecha >= inicio, Atencion.fecha <= ultima)
-               .group_by(Atencion.fecha).order_by(Atencion.fecha.desc()).limit(90).all())
-    motivos = (db.session.query(Atencion.motivo, func.count(Atencion.id))
-               .filter(Atencion.fecha >= inicio, Atencion.fecha <= ultima)
-               .group_by(Atencion.motivo).order_by(func.count(Atencion.id).desc()).limit(10).all())
-    niveles = (db.session.query(MLDemandaDiaria.nivel_demanda, func.count(MLDemandaDiaria.id))
-               .group_by(MLDemandaDiaria.nivel_demanda).all())
+
+    # --------------------------------------------------------
+    # ATENCIONES POR MES
+    # Compatible con SQLite y PostgreSQL
+    # --------------------------------------------------------
+
+    mes = _expresion_mes(Atencion.fecha)
+
+    por_mes = (
+        db.session.query(
+            mes.label("mes"),
+            func.count(Atencion.id).label("cantidad")
+        )
+        .group_by(mes)
+        .order_by(mes.desc())
+        .limit(12)
+        .all()
+    )
+
+    # --------------------------------------------------------
+    # ATENCIONES POR DÍA
+    # --------------------------------------------------------
+
+    por_dia = (
+        db.session.query(
+            Atencion.fecha,
+            func.count(Atencion.id).label("cantidad")
+        )
+        .filter(
+            Atencion.fecha >= inicio,
+            Atencion.fecha <= ultima
+        )
+        .group_by(Atencion.fecha)
+        .order_by(Atencion.fecha.desc())
+        .limit(90)
+        .all()
+    )
+
+    # --------------------------------------------------------
+    # MOTIVOS MÁS FRECUENTES
+    # --------------------------------------------------------
+
+    cantidad_motivos = func.count(Atencion.id)
+
+    motivos = (
+        db.session.query(
+            Atencion.motivo,
+            cantidad_motivos.label("cantidad")
+        )
+        .filter(
+            Atencion.fecha >= inicio,
+            Atencion.fecha <= ultima
+        )
+        .group_by(Atencion.motivo)
+        .order_by(cantidad_motivos.desc())
+        .limit(10)
+        .all()
+    )
+
+    # --------------------------------------------------------
+    # NIVELES DE DEMANDA
+    # --------------------------------------------------------
+
+    niveles = (
+        db.session.query(
+            MLDemandaDiaria.nivel_demanda,
+            func.count(MLDemandaDiaria.id).label("dias")
+        )
+        .group_by(MLDemandaDiaria.nivel_demanda)
+        .all()
+    )
+
+    # --------------------------------------------------------
+    # RESPUESTA ESTADÍSTICA
+    # --------------------------------------------------------
+
     return {
-        "origen": "Base de datos local; historial simulado para demostración",
+        "origen": (
+            "Base de datos del sistema clínico; "
+            "historial simulado para demostración"
+        ),
         "ultima_fecha_registrada": ultima.isoformat(),
-        "periodo_reciente": {"desde": inicio.isoformat(), "hasta": ultima.isoformat()},
+        "periodo_reciente": {
+            "desde": inicio.isoformat(),
+            "hasta": ultima.isoformat()
+        },
         "total_atenciones_historicas": total,
-        "atenciones_por_mes": [{"mes": str(m), "cantidad": n} for m, n in por_mes],
-        "atenciones_por_dia_recientes": [{"fecha": f.isoformat(), "cantidad": n} for f, n in por_dia],
-        "motivos_frecuentes_recientes": [{"motivo": (str(m)[:100] if m else "Sin especificar"), "cantidad": n} for m, n in motivos],
-        "dias_por_nivel_demanda": [{"nivel": str(n), "dias": c} for n, c in niveles],
-        "modelo_ml": {"tipo": "Clasificador de demanda BAJA/MEDIA/ALTA", "exactitud_evaluada": "43.64 %", "limitacion": "Igual al modelo de referencia; no validado para decisiones reales"},
+        "atenciones_por_mes": [
+            {
+                "mes": str(m),
+                "cantidad": n
+            }
+            for m, n in por_mes
+        ],
+        "atenciones_por_dia_recientes": [
+            {
+                "fecha": f.isoformat(),
+                "cantidad": n
+            }
+            for f, n in por_dia
+        ],
+        "motivos_frecuentes_recientes": [
+            {
+                "motivo": (
+                    str(m)[:100]
+                    if m else "Sin especificar"
+                ),
+                "cantidad": n
+            }
+            for m, n in motivos
+        ],
+        "dias_por_nivel_demanda": [
+            {
+                "nivel": str(n),
+                "dias": c
+            }
+            for n, c in niveles
+        ],
+        "modelo_ml": {
+            "tipo": (
+                "Clasificador de demanda "
+                "BAJA/MEDIA/ALTA"
+            ),
+            "exactitud_evaluada": "43.64 %",
+            "limitacion": (
+                "Igual al modelo de referencia; "
+                "no validado para decisiones reales"
+            )
+        }
     }
 
 
-# Consultas individuales: permanecen dentro de Flask/SQLite.
-import re
-import unicodedata
-from sqlalchemy import or_
-from models import Paciente
-
+# ============================================================
+# 3. NORMALIZACIÓN DE TEXTO
+# ============================================================
 
 def _normalizar(texto):
-    texto = unicodedata.normalize("NFKD", str(texto or ""))
-    return "".join(c for c in texto if not unicodedata.combining(c)).lower().strip()
+    """Elimina tildes y convierte a minúsculas."""
 
+    texto = unicodedata.normalize(
+        "NFKD",
+        str(texto or "")
+    )
+
+    return "".join(
+        caracter
+        for caracter in texto
+        if not unicodedata.combining(caracter)
+    ).lower().strip()
+
+
+# ============================================================
+# 4. INTERPRETACIÓN DE BÚSQUEDA
+# ============================================================
 
 def interpretar_busqueda(pregunta):
-    """Devuelve (tipo, valor, historial) o None para consultas estadísticas.
+    """Devuelve (tipo, valor, historial) o None.
 
-    Las consultas de pacientes se resuelven localmente, sin enviar el texto a Gemini.
+    Las búsquedas individuales se procesan en Flask
+    y no se envían a Gemini.
     """
-    texto = pregunta.strip()
+
+    texto = str(pregunta or "").strip()
     normal = _normalizar(texto)
-    dni = re.search(r"(?<!\d)\d{8}(?!\d)", texto)
-    es_paciente = bool(re.search(
-        r"\b(paciente|pacientes|dni|historial|historia clinica|expediente|"
-        r"ultima atencion|ultimo diagnostico|receta|diagnostico|"
-        r"busca(?:r|me)? a|muestra(?:me)? a|datos de|atenciones de)\b", normal))
+
+    # Aceptar DNI de 8 o 9 dígitos.
+    dni = re.search(
+        r"(?<!\d)\d{8,9}(?!\d)",
+        texto
+    )
+
+    es_paciente = bool(
+        re.search(
+            r"\b("
+            r"paciente|pacientes|dni|historial|"
+            r"historia clinica|expediente|"
+            r"ultima atencion|ultimo diagnostico|"
+            r"receta|diagnostico|"
+            r"busca(?:r|me)? a|"
+            r"muestra(?:me)? a|"
+            r"datos de|atenciones de"
+            r")\b",
+            normal
+        )
+    )
+
     if dni:
         return ("dni", dni.group(), True)
+
     if not es_paciente:
         return None
-    # No devolver un listado completo sin criterio de búsqueda.
+
     patrones = [
-        r"(?:dni|paciente|historial|historia clinica|expediente|datos de|"
-        r"atenciones de|ultima atencion de|ultimo diagnostico de|"
-        r"busca(?:r|me)? a|muestra(?:me)? a)\s*(?:de|del|al|a|con|por|llamado|llamada|nombre)?\s*(.*)$",
+        (
+            r"(?:dni|paciente|historial|"
+            r"historia clinica|expediente|"
+            r"datos de|atenciones de|"
+            r"ultima atencion de|"
+            r"ultimo diagnostico de|"
+            r"busca(?:r|me)? a|"
+            r"muestra(?:me)? a)"
+            r"\s*"
+            r"(?:de|del|al|a|con|por|"
+            r"llamado|llamada|nombre)?"
+            r"\s*(.*)$"
+        )
     ]
+
     nombre = ""
+
     for patron in patrones:
-        m = re.search(patron, normal)
-        if m:
-            nombre = m.group(1).strip(" ?.,:;!\"'")
+        coincidencia = re.search(patron, normal)
+
+        if coincidencia:
+            nombre = coincidencia.group(1).strip(
+                " ?.,:;!\"'"
+            )
             break
-    nombre = re.sub(r"^(?:nombre|apellidos?|paciente|de|del|al|a|con|por)\s+", "", nombre).strip()
-    if not nombre or nombre in {"hoy", "ayer", "todos", "todas", "los", "las", "septiembre"}:
+
+    nombre = re.sub(
+        r"^(?:nombre|apellidos?|paciente|"
+        r"de|del|al|a|con|por)\s+",
+        "",
+        nombre
+    ).strip()
+
+    if not nombre or nombre in {
+        "hoy", "ayer", "todos", "todas",
+        "los", "las", "septiembre"
+    }:
         return ("ayuda", "", False)
+
     if len(nombre) < 3:
         return ("ayuda", "", False)
+
     return ("nombre", nombre, True)
 
 
-def buscar_pacientes(tipo, valor, limite=8):
-    """Busca pacientes sin distinguir tildes ni mayúsculas.
+# ============================================================
+# 5. BÚSQUEDA DE PACIENTES
+# ============================================================
 
-    Implementación para la base académica pequeña (420 pacientes).
-    Para bases grandes, crear un campo de nombre normalizado e indexado.
+def buscar_pacientes(tipo, valor, limite=8):
+    """Busca pacientes por DNI o nombre.
+
+    No distingue tildes ni mayúsculas.
+
+    Compatible con SQLite y PostgreSQL.
     """
+
     if tipo == "dni":
-        return Paciente.query.filter(Paciente.dni == str(valor).strip()).limit(1).all()
+        return (
+            Paciente.query
+            .filter(
+                Paciente.dni == str(valor).strip()
+            )
+            .limit(1)
+            .all()
+        )
+
     if tipo != "nombre":
         return []
 
     palabras = _normalizar(valor).split()[:6]
+
     if not palabras:
         return []
 
-    # Limitar el conjunto para no cargar indefinidamente expedientes.
-    # No se accede a historiales clínicos durante esta búsqueda.
     total = Paciente.query.count()
+
     if total > 5000:
         raise RuntimeError(
-            "La búsqueda sin tildes requiere un índice de nombres normalizados "
-            "para bases de más de 5000 pacientes."
+            "La búsqueda sin tildes requiere un "
+            "índice de nombres normalizados para "
+            "bases de más de 5000 pacientes."
         )
-    candidatos = Paciente.query.order_by(Paciente.apellidos, Paciente.nombres).all()
+
+    candidatos = (
+        Paciente.query
+        .order_by(
+            Paciente.apellidos,
+            Paciente.nombres
+        )
+        .all()
+    )
+
     encontrados = []
+
     for paciente in candidatos:
+
         nombre_completo = _normalizar(
-            f"{paciente.nombres or ''} {paciente.apellidos or ''}"
+            f"{paciente.nombres or ''} "
+            f"{paciente.apellidos or ''}"
         )
-        if all(palabra in nombre_completo.split() or any(
-            palabra in token for token in nombre_completo.split()
-        ) for palabra in palabras):
+
+        tokens = nombre_completo.split()
+
+        coincide = all(
+            any(
+                palabra in token
+                for token in tokens
+            )
+            for palabra in palabras
+        )
+
+        if coincide:
             encontrados.append(paciente)
+
             if len(encontrados) > limite:
                 break
+
     return encontrados
 
 
+# ============================================================
+# 6. FORMATO DE FECHAS
+# ============================================================
+
 def _fecha(valor):
-    return valor.isoformat() if valor is not None and hasattr(valor, "isoformat") else str(valor or "No registrado")
+    """Convierte fechas a texto para mostrarlas."""
+
+    if valor is None:
+        return "No registrado"
+
+    if hasattr(valor, "isoformat"):
+        return valor.isoformat()
+
+    return str(valor)
 
 
-def formatear_paciente(paciente, incluir_historial=True):
+# ============================================================
+# 7. FORMATEAR FICHA DEL PACIENTE
+# ============================================================
+
+def formatear_paciente(
+    paciente,
+    incluir_historial=True
+):
+    """Construye una ficha clínica en Flask.
+
+    No envía datos individuales a Gemini.
+    """
+
     campos = [
-        ("Paciente", f"{paciente.nombres or ''} {paciente.apellidos or ''}".strip()),
+        (
+            "Paciente",
+            (
+                f"{paciente.nombres or ''} "
+                f"{paciente.apellidos or ''}"
+            ).strip()
+        ),
         ("DNI", paciente.dni),
-        ("Fecha de nacimiento", _fecha(paciente.fecha_nacimiento)),
+        (
+            "Fecha de nacimiento",
+            _fecha(paciente.fecha_nacimiento)
+        ),
         ("Sexo", paciente.sexo),
         ("Teléfono", paciente.telefono),
         ("Departamento", paciente.departamento),
         ("Provincia", paciente.provincia),
         ("Distrito", paciente.distrito),
-        ("Dirección", " ".join(str(x) for x in (paciente.tipo_via, paciente.nombre_via) if x)),
+        (
+            "Dirección",
+            " ".join(
+                str(x)
+                for x in (
+                    paciente.tipo_via,
+                    paciente.nombre_via
+                )
+                if x
+            )
+        )
     ]
+
     lineas = ["**Ficha del paciente**"]
-    lineas.extend(f"**{etiqueta}:** {valor if valor else 'No registrado'}" for etiqueta, valor in campos)
+
+    lineas.extend(
+        f"**{etiqueta}:** "
+        f"{valor if valor else 'No registrado'}"
+        for etiqueta, valor in campos
+    )
+
     if incluir_historial:
-        # Máximo 20 atenciones por respuesta; no incluirlas en llamadas a Gemini.
-        total = Atencion.query.filter_by(paciente_id=paciente.id).count()
-        atenciones = (Atencion.query.filter_by(paciente_id=paciente.id)
-                      .order_by(Atencion.fecha.desc(), Atencion.id.desc()).limit(20).all())
-        lineas.append(f"\n**Historial de atenciones:** {total} registro(s).")
+
+        total = (
+            Atencion.query
+            .filter_by(paciente_id=paciente.id)
+            .count()
+        )
+
+        atenciones = (
+            Atencion.query
+            .filter_by(paciente_id=paciente.id)
+            .order_by(
+                Atencion.fecha.desc(),
+                Atencion.id.desc()
+            )
+            .limit(20)
+            .all()
+        )
+
+        lineas.append(
+            f"\n**Historial de atenciones:** "
+            f"{total} registro(s)."
+        )
+
         if total > len(atenciones):
-            lineas.append("Se muestran las 20 atenciones más recientes.")
-        for i, a in enumerate(atenciones, 1):
+            lineas.append(
+                "Se muestran las 20 atenciones "
+                "más recientes."
+            )
+
+        for i, atencion in enumerate(
+            atenciones, 1
+        ):
             lineas.extend([
-                f"\n**Atención {i} — {_fecha(a.fecha)}**",
-                f"- Hora: {a.hora or 'No registrada'}",
-                f"- Motivo: {a.motivo or 'No registrado'}",
-                f"- Síntomas: {a.sintomas or 'No registrados'}",
-                f"- Diagnóstico: {a.diagnostico or 'No registrado'}",
-                f"- Receta: {a.receta or 'No registrada'}",
-                f"- Notas: {a.notas or 'No registradas'}",
-                f"- Estado: {a.estado or 'No registrado'}",
+                (
+                    f"\n**Atención {i} — "
+                    f"{_fecha(atencion.fecha)}**"
+                ),
+                (
+                    f"- Hora: "
+                    f"{atencion.hora or 'No registrada'}"
+                ),
+                (
+                    f"- Motivo: "
+                    f"{atencion.motivo or 'No registrado'}"
+                ),
+                (
+                    f"- Síntomas: "
+                    f"{atencion.sintomas or 'No registrados'}"
+                ),
+                (
+                    f"- Diagnóstico: "
+                    f"{atencion.diagnostico or 'No registrado'}"
+                ),
+                (
+                    f"- Receta: "
+                    f"{atencion.receta or 'No registrada'}"
+                ),
+                (
+                    f"- Notas: "
+                    f"{atencion.notas or 'No registradas'}"
+                ),
+                (
+                    f"- Estado: "
+                    f"{atencion.estado or 'No registrado'}"
+                )
             ])
+
     return "\n".join(lineas)
 
 
+# ============================================================
+# 8. RESPUESTA A BÚSQUEDAS INDIVIDUALES
+# ============================================================
+
 def respuesta_busqueda(tipo, valor):
+    """Responde búsquedas sin llamar a Gemini."""
+
     if tipo == "ayuda":
-        return "Para consultar una ficha, indica el DNI de 8 o 9 dígitos o el nombre del paciente. Ejemplo: «Historial del DNI 12345678» o «Busca al paciente Juan Pérez»."
-    resultados = buscar_pacientes(tipo, valor)
+        return (
+            "Para consultar una ficha, indica el DNI "
+            "de 8 o 9 dígitos o el nombre del paciente. "
+            "Ejemplo: «Historial del DNI 12345678» "
+            "o «Busca al paciente Juan Pérez»."
+        )
+
+    resultados = buscar_pacientes(
+        tipo,
+        valor
+    )
+
     if not resultados:
-        return "No encontré pacientes que coincidan con la búsqueda en la base de datos actual."
+        return (
+            "No encontré pacientes que coincidan "
+            "con la búsqueda en la base de datos actual."
+        )
+
     if len(resultados) > 8:
-        return "Hay más de 8 coincidencias. Especifica el DNI o un nombre y apellido más completos."
+        return (
+            "Hay más de 8 coincidencias. "
+            "Especifica el DNI o un nombre "
+            "y apellido más completos."
+        )
+
     if len(resultados) > 1:
-        lineas = ["Encontré varios pacientes. Indica el DNI para abrir el expediente correcto:"]
-        lineas.extend(f"- {p.nombres} {p.apellidos} — DNI: {p.dni}" for p in resultados)
+
+        lineas = [
+            "Encontré varios pacientes. "
+            "Indica el DNI para abrir "
+            "el expediente correcto:"
+        ]
+
+        lineas.extend(
+            (
+                f"- {p.nombres} {p.apellidos} "
+                f"— DNI: {p.dni}"
+            )
+            for p in resultados
+        )
+
         return "\n".join(lineas)
-    return formatear_paciente(resultados[0])
+
+    return formatear_paciente(
+        resultados[0]
+    )
