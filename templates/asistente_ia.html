@@ -1,14 +1,121 @@
+
 {% extends "base.html" %}
-{% block titulo %}Asistente IA — {{ nombre_clinica|default('Policlínico') }}{% endblock %}
+
+{% block titulo %}
+Asistente Multiagente — {{ nombre_clinica|default('Policlínico') }}
+{% endblock %}
+
 {% block contenido %}
-<link rel="stylesheet" href="{{ url_for('static', filename='css/asistente_ia.css') }}">
-<div class="page-header"><div><span class="eyebrow">INTELIGENCIA ARTIFICIAL · GEMINI</span><h2>Asistente IA</h2><p class="sub">Consulta estadísticas y tendencias del historial de atenciones.</p></div></div>
-<section class="ia-panel card" aria-label="Chat con el asistente">
- <div class="ia-cabecera"><i class="fa-solid fa-robot"></i><div><strong>Asistente del policlínico</strong><small>Gemini · Consultas estadísticas</small></div></div>
- <div class="ia-mensajes" id="ia-mensajes" role="log" aria-live="polite"><div class="ia-mensaje bot">¡Hola! Puedo ayudarte a analizar las atenciones registradas, los motivos frecuentes y los niveles de demanda. ¿Qué te gustaría consultar?</div></div>
- <div class="ia-sugerencias"><button type="button" data-pregunta="¿Cuántas atenciones hay registradas y cómo se distribuyen por mes?">Atenciones por mes</button><button type="button" data-pregunta="¿Cuáles son los motivos de consulta más frecuentes en el periodo reciente?">Motivos frecuentes</button><button type="button" data-pregunta="¿Qué significa la predicción de demanda BAJA, MEDIA y ALTA y cuáles son sus limitaciones?">Explicar predicción ML</button></div>
- <form class="ia-form" id="ia-form"><label class="ia-sr" for="ia-pregunta">Escribe tu pregunta</label><input id="ia-pregunta" maxlength="500" placeholder="Escribe tu pregunta sobre el historial..." autocomplete="off" required><button class="btn btn-primario" type="submit" id="ia-enviar"><i class="fa-solid fa-paper-plane"></i> Enviar</button></form>
- <p class="ia-pie">No ingreses nombres, DNI, teléfonos ni información clínica individual.</p>
+
+<link rel="stylesheet"
+      href="{{ url_for('static', filename='css/asistente_ia.css') }}">
+
+<div class="page-header">
+    <div>
+        <span class="eyebrow">
+            INTELIGENCIA ARTIFICIAL · MULTIAGENTE
+        </span>
+
+        <h2>Asistente Multiagente</h2>
+
+        <p class="sub">
+            Sistema de dos agentes de inteligencia artificial
+            para analizar estadísticas y tendencias del policlínico.
+        </p>
+    </div>
+</div>
+
+<section class="ia-panel card"
+         aria-label="Chat con el asistente multiagente">
+
+    <div class="ia-cabecera">
+        <i class="fa-solid fa-robot"></i>
+
+        <div>
+            <strong>Asistente Multiagente del Policlínico</strong>
+
+            <small>
+                Gemini (Analista) + Groq (Asesor)
+            </small>
+        </div>
+    </div>
+
+    <div class="ia-mensajes"
+         id="ia-mensajes"
+         role="log"
+         aria-live="polite">
+
+        <div class="ia-mensaje bot">
+            ¡Hola! Soy tu asistente multiagente.
+
+            Gemini analiza las estadísticas del policlínico
+            y Groq ayuda a elaborar conclusiones y
+            recomendaciones administrativas.
+
+            ¿Qué te gustaría consultar?
+        </div>
+
+    </div>
+
+    <div class="ia-sugerencias">
+
+        <button type="button"
+                data-pregunta="¿Cuántas atenciones hay registradas y cómo se distribuyen por mes?">
+            Atenciones por mes
+        </button>
+
+        <button type="button"
+                data-pregunta="¿Cuáles son los motivos de consulta más frecuentes en el periodo reciente?">
+            Motivos frecuentes
+        </button>
+
+        <button type="button"
+                data-pregunta="¿Qué significa la predicción de demanda BAJA, MEDIA y ALTA y cuáles son sus limitaciones?">
+            Explicar predicción ML
+        </button>
+
+        <button type="button"
+                data-pregunta="¿Qué recomendaciones administrativas podemos obtener de las estadísticas de atenciones?">
+            Recomendaciones IA
+        </button>
+
+    </div>
+
+    <form class="ia-form" id="ia-form">
+
+        <label class="ia-sr" for="ia-pregunta">
+            Escribe tu pregunta
+        </label>
+
+        <input
+            id="ia-pregunta"
+            maxlength="500"
+            placeholder="Consulta las estadísticas del policlínico..."
+            autocomplete="off"
+            required
+        >
+
+        <button class="btn btn-primario"
+                type="submit"
+                id="ia-enviar">
+
+            <i class="fa-solid fa-paper-plane"></i>
+            Enviar
+
+        </button>
+
+    </form>
+
+    <p class="ia-pie">
+        Las estadísticas agregadas son analizadas por Gemini y Groq.
+        Los expedientes individuales se consultan únicamente
+        dentro del sistema, sin enviarse a los LLM externos.
+    </p>
+
 </section>
-<script src="{{ url_for('static', filename='js/asistente_ia.js') }}" defer></script>
+
+<script src="{{ url_for('static', filename='js/asistente_ia.js') }}"
+        defer>
+</script>
+
 {% endblock %}
