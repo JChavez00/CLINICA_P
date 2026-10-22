@@ -19,8 +19,8 @@ Asistente Multiagente — {{ nombre_clinica|default('Policlínico') }}
         <h2>Asistente Multiagente</h2>
 
         <p class="sub">
-            Sistema de dos agentes de inteligencia artificial
-            para analizar estadísticas y tendencias del policlínico.
+            Consulta fichas registradas y analiza estadísticas administrativas.
+            El coordinador elige un agente según la solicitud.
         </p>
     </div>
 </div>
@@ -35,7 +35,7 @@ Asistente Multiagente — {{ nombre_clinica|default('Policlínico') }}
             <strong>Asistente Multiagente del Policlínico</strong>
 
             <small>
-                Gemini (Analista) + Groq (Asesor)
+                Gemini · Consultor clínico / Groq · Analista inteligente
             </small>
         </div>
     </div>
@@ -48,9 +48,9 @@ Asistente Multiagente — {{ nombre_clinica|default('Policlínico') }}
         <div class="ia-mensaje bot">
             ¡Hola! Soy tu asistente multiagente.
 
-            Gemini analiza las estadísticas del policlínico
-            y Groq ayuda a elaborar conclusiones y
-            recomendaciones administrativas.
+            Gemini interpreta consultas de fichas sin recibir identificadores.
+            Groq analiza estadísticas agregadas. El texto libre y los expedientes
+            permanecen dentro de la aplicación.
 
             ¿Qué te gustaría consultar?
         </div>
@@ -65,8 +65,8 @@ Asistente Multiagente — {{ nombre_clinica|default('Policlínico') }}
         </button>
 
         <button type="button"
-                data-pregunta="¿Cuáles son los motivos de consulta más frecuentes en el periodo reciente?">
-            Motivos frecuentes
+                data-pregunta="Compara las atenciones de agosto y septiembre">
+            Comparar períodos
         </button>
 
         <button type="button"
@@ -107,7 +107,7 @@ Asistente Multiagente — {{ nombre_clinica|default('Policlínico') }}
     </form>
 
     <p class="ia-pie">
-        Las estadísticas agregadas son analizadas por Gemini y Groq.
+        Cada consulta utiliza el proveedor del agente seleccionado.
         Los expedientes individuales se consultan únicamente
         dentro del sistema, sin enviarse a los LLM externos.
     </p>

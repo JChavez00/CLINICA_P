@@ -1,0 +1,44 @@
+{% extends "base.html" %}
+{% block titulo %}{{ {'reportes':'Reportes inteligentes','tareas':'Automatización de tareas','calidad':'Calidad de datos','auditoria':'Actividad de agentes'}[modulo] }} — {{ nombre_clinica }}{% endblock %}
+{% block contenido %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/agentes.css') }}">
+<div id="agentes-app" data-modulo="{{ modulo }}" data-csrf="{{ csrf }}">
+<div class="page-header"><div><span class="eyebrow">AGENTES ADMINISTRATIVOS · CLINICA_P</span>
+<h2>{{ {'reportes':'Reportes inteligentes','tareas':'Automatización de tareas','calidad':'Calidad de datos','auditoria':'Actividad de agentes'}[modulo] }}</h2>
+<p class="sub">{{ {'reportes':'Gemini planifica informes con cifras y gráficos calculados por Python.','tareas':'Gemini prepara la configuración; tú confirmas qué se programa.','calidad':'Python detecta incidencias y Groq interpreta únicamente categorías agregadas.','auditoria':'Historial técnico sin mensajes ni identificadores de pacientes.'}[modulo] }}</p></div></div>
+<div id="ag-error" class="alerta error" role="alert" hidden></div><p id="ag-estado" role="status" aria-live="polite"></p>
+{% if modulo in ['reportes','calidad'] %}
+<form id="ag-form" class="card ag-form">
+{% if modulo == 'reportes' %}<div class="campo"><label for="ag-tipo">Tipo de reporte</label><select id="ag-tipo"><option value="rango">Rango de fechas</option><option value="diario">Diario</option><option value="semanal">Semanal</option><option value="mensual">Mensual</option></select></div>{% endif %}
+<div class="campo"><label for="ag-desde">Fecha inicial</label><input type="date" id="ag-desde" value="{{ hoy[:8] }}01" required></div>
+<div class="campo"><label for="ag-hasta">Fecha final</label><input type="date" id="ag-hasta" value="{{ hoy }}" required></div>
+{% if modulo == 'reportes' %}
+<fieldset class="ag-secciones"><legend>Secciones</legend>
+<label><input type="checkbox" name="seccion" value="atenciones" checked> Atenciones</label>
+<label><input type="checkbox" name="seccion" value="servicios"> Servicios (verificar disponibilidad)</label>
+<label><input type="checkbox" name="seccion" value="costos"> Costos registrados (verificar disponibilidad)</label>
+<label><input type="checkbox" name="seccion" value="ml"> Pronósticos ML guardados para los próximos siete días</label></fieldset>
+<label class="ag-secciones"><input type="checkbox" id="ag-revision"> Solicitar revisión adicional del analista Groq (otra consulta de IA)</label>
+{% endif %}
+<button class="btn btn-primario" type="submit">{{ 'Generar reporte' if modulo == 'reportes' else 'Analizar calidad' }}</button>
+</form>
+{% endif %}
+{% if modulo == 'tareas' %}
+<form id="ag-form" class="card ag-form"><div class="campo ag-ancho"><label for="ag-solicitud">Tarea administrativa</label><textarea id="ag-solicitud" maxlength="500" rows="3" required placeholder="Genera un reporte todos los lunes a las 08:00"></textarea></div>
+<p class="ag-nota">Horarios según Mi perfil (inicialmente Perú). Reportes, estadísticas, consulta ML y alertas ALTA experimentales. Los avisos se conservan en Notificaciones; el correo requiere proveedor, dirección verificada y tus preferencias activadas.</p>
+<button class="btn btn-primario" type="submit">Preparar vista previa</button></form>
+<div class="card card-body" id="ag-preview" hidden><h3>Revisar programación</h3><div id="ag-config"></div><p>La programación todavía no existe. Confirma sólo después de revisar la configuración. El borrador caduca en diez minutos.</p><button id="ag-confirmar" type="button" class="btn btn-primario">Confirmar y programar</button></div>
+<h3>Tareas programadas</h3><p id="ag-programador" class="ag-nota"></p><div id="ag-tareas" class="ag-scroll"></div><h3>Historial de ejecuciones</h3><p>Las alertas y avisos se conservan en <a href="/notificaciones">Notificaciones</a>.</p><div id="ag-ejecuciones" class="ag-scroll"></div>
+{% endif %}
+{% if modulo in ['reportes','calidad'] %}
+<div id="ag-resultado" hidden>
+<div class="ag-tarjetas" id="ag-indicadores"></div><div class="card card-body"><h3>{{ 'Vista previa del informe' if modulo == 'reportes' else 'Indicadores por categoría' }}</h3><div class="ag-chart"><canvas id="ag-grafico" role="img" aria-label="Gráfico con conteos calculados por Python"></canvas></div><div id="ag-tabla" class="ag-scroll"></div></div>
+<div class="card card-body"><h3>Conclusiones y recomendaciones</h3><p id="ag-agente"></p><ul id="ag-conclusiones"></ul><p id="ag-advertencia" class="ag-nota"></p></div>
+{% if modulo == 'reportes' %}<div class="ag-descargas"><a id="ag-pdf" class="btn btn-primario">Descargar PDF</a><a id="ag-excel" class="btn btn-primario">Descargar Excel</a></div><div id="ag-ml" class="ag-scroll"></div>{% else %}<div class="card card-body"><h3>Incidencias autorizadas</h3><p>No se corrige, fusiona ni elimina ningún registro. Las duplicaciones son sospechas para revisión humana.</p><p id="ag-alcance"></p><div id="ag-incidencias" class="ag-scroll"></div></div>{% endif %}
+</div>
+{% endif %}
+{% if modulo == 'reportes' %}<h3>Informes guardados</h3><div id="ag-informes" class="ag-lista"></div>{% endif %}
+{% if modulo == 'auditoria' %}<button type="button" id="ag-recargar" class="btn btn-primario">Actualizar historial</button><div id="ag-auditoria" class="card card-body ag-scroll"></div>{% endif %}
+</div>
+{% endblock %}
+{% block scripts %}<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script><script src="{{ url_for('static', filename='js/agentes.js') }}" defer></script>{% endblock %}

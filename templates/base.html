@@ -16,6 +16,8 @@
                 <p>Registro Clínico</p>
             </div>
             <ul class="nav-lista">
+                <li><a href="/mi-perfil"><span class="nav-icono"><i class="fa-solid fa-user"></i></span> Mi perfil</a></li>
+                <li><a href="/notificaciones"><span class="nav-icono"><i class="fa-solid fa-bell"></i></span> Notificaciones</a></li>
                 <li><a href="{{ url_for('dashboard') }}" class="{{ 'activo' if request.endpoint == 'dashboard' }}">
                     <span class="nav-icono"><i class="fa-solid fa-gauge"></i></span> Inicio</a></li>
                 <li><a href="{{ url_for('nueva_atencion') }}" class="{{ 'activo' if request.endpoint == 'nueva_atencion' }}">
@@ -38,6 +40,10 @@
                         Asistente IA
                     </a>
                 </li>
+                <li><a href="{{ url_for('asistente_ia.reportes_pagina') }}" class="{{ 'activo' if request.endpoint == 'asistente_ia.reportes_pagina' else '' }}"><span class="nav-icono"><i class="fa-solid fa-file-lines"></i></span> Reportes inteligentes</a></li>
+                <li><a href="{{ url_for('asistente_ia.tareas_pagina') }}" class="{{ 'activo' if request.endpoint == 'asistente_ia.tareas_pagina' else '' }}"><span class="nav-icono"><i class="fa-solid fa-calendar-check"></i></span> Automatización de tareas</a></li>
+                <li><a href="{{ url_for('asistente_ia.calidad_pagina') }}" class="{{ 'activo' if request.endpoint == 'asistente_ia.calidad_pagina' else '' }}"><span class="nav-icono"><i class="fa-solid fa-list-check"></i></span> Calidad de datos</a></li>
+                <li><a href="{{ url_for('asistente_ia.actividad_pagina') }}" class="{{ 'activo' if request.endpoint == 'asistente_ia.actividad_pagina' else '' }}"><span class="nav-icono"><i class="fa-solid fa-clock-rotate-left"></i></span> Actividad de agentes</a></li>
             </ul>
             <div class="sidebar-footer">
                 <div class="usuario"><i class="fa-solid fa-circle-user"></i> {{ session.get('usuario', '') }}</div>

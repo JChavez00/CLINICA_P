@@ -8,11 +8,14 @@ psycopg2-binary==2.9.9
 python-dotenv==1.0.1
 
 # Machine Learning
-joblib
-scikit-learn
-pandas
-numpy
+joblib==1.6.0
+scikit-learn==1.9.1
+pandas==3.0.6
+numpy==2.5.4
 
 # Asistente IA Gemini
-google-genai
-groq
+google-genai==2.32.0
+groq==1.7.0
+pydantic==2.14.1
+reportlab==5.1.0
+tzdata==2026.5

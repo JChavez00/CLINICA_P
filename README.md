@@ -1,5 +1,13 @@
 # Registro Clínico — Consultorio
 
+> Sistema multiagente ampliado: [arquitectura, operación y privacidad](docs/AGENTES.md)
+> y [resultados de verificación](docs/AGENTES_RESULTADOS.md). Incluye consultor,
+> analista, reportes PDF/Excel, tareas con confirmación y calidad de datos.
+
+> Módulo ML ampliado: consulta [la guía de operación](docs/ML.md) y
+> [los resultados reales](docs/ML_RESULTADOS.md). Incluye cinco familias,
+> clasificación, regresión, dashboards y comandos de pronósticos programados.
+
 Sistema web para registrar atenciones diarias de un consultorio: buscas al
 paciente por DNI (o lo registras si es nuevo), llenas los datos de la
 consulta, y al final del día tienes la lista de todos los pacientes
@@ -174,3 +182,8 @@ reales. Antes de usarlo en producción con pacientes:
 - Si tu consultorio crece, evalúa un hosting pagado con mejores garantías
   de disponibilidad y respaldo, y revisa qué exige la Ley de Protección de
   Datos Personales del Perú para el manejo de historias clínicas.
+# Perfil y automatización persistente
+
+Guía de configuración local, Render Cron, archivos privados y correo:
+[PERFIL_AUTOMATIZACION.md](docs/PERFIL_AUTOMATIZACION.md).
+Incluye migración de la cuenta existente, variables y pendientes externos.

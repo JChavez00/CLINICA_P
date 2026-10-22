@@ -1,227 +1,62 @@
-
 {% extends "base.html" %}
-
-{% block titulo %}
-Predicción de demanda — {{ nombre_clinica }}
-{% endblock %}
-
+{% block titulo %}Predicción de demanda — {{ nombre_clinica }}{% endblock %}
 {% block contenido %}
+<link rel="stylesheet" href="{{ url_for('static', filename='css/demanda.css') }}">
+<div class="page-header"><div><span class="eyebrow">PLANIFICACIÓN · MACHINE LEARNING</span>
+<h2>Demanda y capacidad de atención</h2><p class="sub">Dos objetivos, cinco familias de modelos y evaluación temporal. Estimaciones experimentales para apoyar la planificación.</p></div></div>
+<div id="demanda-error" role="alert" class="alerta error" hidden></div>
+<p id="ml-estado" role="status" aria-live="polite">Cargando datos y modelos…</p>
+<div id="ml-aviso" class="demanda-alerta">Las predicciones no son certezas. No sustituyen la revisión del historial ni decisiones profesionales.</div>
 
-<link
-    rel="stylesheet"
-    href="{{ url_for('static', filename='css/demanda.css') }}"
->
+<section aria-labelledby="resumen-titulo"><h3 id="resumen-titulo">1. Resumen general</h3>
+<div class="ml-tarjetas">
+{% for id, etiqueta in [('total','Atenciones históricas'),('dias','Días analizados'),('clasificador','Clasificador seleccionado'),('regresor','Regresor seleccionado'),('manana','Demanda de mañana'),('cantidad','Atenciones estimadas mañana'),('actualizacion','Última emisión automática')] %}
+<div class="stat-card"><div class="valor" id="ml-{{ id }}">—</div><div class="etiqueta">{{ etiqueta }}</div></div>
+{% endfor %}</div></section>
 
-<!-- ENCABEZADO -->
-<div class="page-header">
-    <div>
-        <span class="eyebrow">
-            MACHINE LEARNING · YANAHUANCA
-        </span>
+<section aria-labelledby="futuro-titulo"><h3 id="futuro-titulo">2. Pronósticos futuros e históricos</h3>
+<form id="ml-filtros" class="demanda-filtros card">
+<div class="campo"><label for="demanda-fecha">Desde</label><input type="date" id="demanda-fecha" value="{{ manana }}" required></div>
+<div class="campo"><label for="demanda-dias">Horizonte</label><select id="demanda-dias"><option value="7">7 días</option><option value="15">15 días</option><option value="30">30 días</option></select></div>
+<button class="btn btn-primario" type="submit">Consultar emisiones guardadas</button></form>
+<div class="demanda-columnas"><div class="card card-body"><h4>Atenciones por día</h4><div class="ml-chart"><canvas id="ml-linea" aria-label="Atenciones observadas y estimadas" role="img"></canvas></div></div>
+<div class="card card-body"><h4>Calendario de demanda</h4><div id="demanda-calendario" class="demanda-calendario"></div><p id="demanda-detalle" aria-live="polite" class="demanda-detalle">Selecciona una fecha.</p></div></div>
+<details class="card card-body"><summary>Datos y comparación con emisiones anteriores</summary><div class="ml-scroll" id="ml-historial-tabla"></div></details>
+<p class="demanda-ayuda">Esta consulta no genera ni guarda predicciones. Si faltan emisiones, debe ejecutarse la tarea programada. Una fecha sin registro no se considera cero.</p>
+</section>
 
-        <h2>Predicción de demanda</h2>
+<section aria-labelledby="comparacion-titulo"><h3 id="comparacion-titulo">3. Comparación de las cinco familias</h3>
+<p>Los gráficos comparan validación temporal. La prueba final se reserva para los ganadores y las referencias.</p>
+<div class="demanda-columnas"><div class="card card-body"><h4>Clasificación · F1 macro (mayor es mejor)</h4><div class="ml-chart"><canvas id="ml-f1" role="img" aria-label="Comparación F1 macro"></canvas></div><div id="ml-tabla-clasificacion" class="ml-scroll"></div></div>
+<div class="card card-body"><h4>Regresión · MAE (menor es mejor)</h4><div class="ml-chart"><canvas id="ml-mae" role="img" aria-label="Comparación MAE"></canvas></div><div id="ml-tabla-regresion" class="ml-scroll"></div></div></div>
+<div class="demanda-columnas"><div class="card card-body"><h4>Prueba final · Clasificador ganador</h4><p id="ml-prueba-clasificacion"></p><div id="ml-confusion" class="ml-scroll"></div><div id="ml-clases" class="ml-scroll"></div></div>
+<div class="card card-body"><h4>Prueba final · Regresor ganador</h4><p id="ml-prueba-regresion"></p><div class="ml-chart"><canvas id="ml-real" role="img" aria-label="Prueba real frente a predicho"></canvas></div><details><summary>Valores de la prueba</summary><div id="ml-real-tabla" class="ml-scroll"></div></details></div></div>
+</section>
 
-        <p class="sub">
-            Analiza el historial de atenciones y consulta
-            las tendencias de demanda estimadas para los
-            próximos días.
-        </p>
-    </div>
-</div>
+<section aria-labelledby="decision-titulo"><h3 id="decision-titulo">4. Apoyo a la toma de decisiones</h3><div class="card card-body"><div id="ml-decisiones"></div><p class="demanda-ayuda">Reglas administrativas basadas exclusivamente en las emisiones del período seleccionado. No se generan recomendaciones clínicas individuales.</p></div></section>
 
+<section aria-labelledby="manual-titulo"><h3 id="manual-titulo">Predicción manual por fecha</h3>
+<form id="ml-manual" class="demanda-filtros card"><div class="campo"><label for="ml-fecha-manual">Fecha futura</label><input type="date" id="ml-fecha-manual" min="{{ manana }}" value="{{ manana }}" required></div>
+<div class="campo"><label for="ml-feriado">Feriado</label><select id="ml-feriado"><option value="">Usar calendario configurado</option><option value="true">Sí, confirmado</option><option value="false">No, confirmado</option></select></div>
+<button class="btn btn-primario" type="submit">Comparar los diez modelos</button></form>
+<div class="card card-body" id="ml-manual-resultado" aria-live="polite">Selecciona una fecha para realizar inferencia sin reentrenar.</div></section>
 
-
-<!-- FILTROS DE PREDICCIÓN -->
-<div class="demanda-filtros card">
-
-    <div class="campo">
-        <label for="demanda-fecha">
-            Desde la fecha
-        </label>
-
-        <input
-            type="date"
-            id="demanda-fecha"
-        >
-    </div>
-
-    <div class="campo">
-        <label for="demanda-dias">
-            Horizonte de predicción
-        </label>
-
-        <select id="demanda-dias">
-            <option value="7">Próximos 7 días</option>
-            <option value="15">Próximos 15 días</option>
-            <option value="30">Próximos 30 días</option>
-        </select>
-    </div>
-
-    <button
-        class="btn btn-primario"
-        id="demanda-consultar"
-        type="button"
-    >
-        <i class="fa-solid fa-magnifying-glass-chart"></i>
-        Consultar demanda
-    </button>
-
-</div>
-
-<!-- MENSAJES DE ERROR -->
-<div
-    id="demanda-error"
-    class="alerta error"
-    hidden
-></div>
-
-<!-- INDICADORES PRINCIPALES -->
-<div class="demanda-metricas">
-
-    <div class="stat-card">
-        <div
-            class="valor"
-            id="demanda-total"
-        >
-            —
-        </div>
-
-        <div class="etiqueta">
-            Total de atenciones registradas
-        </div>
-    </div>
-
-    <div class="stat-card dorado">
-        <div
-            class="valor"
-            id="demanda-dias-hist"
-        >
-            —
-        </div>
-
-        <div class="etiqueta">
-            Días analizados en el historial
-        </div>
-    </div>
-
-    <div class="stat-card">
-        <div
-            class="valor"
-            id="demanda-altos"
-        >
-            —
-        </div>
-
-        <div class="etiqueta">
-            Días con demanda alta en el periodo consultado
-        </div>
-    </div>
-
-</div>
-
-<!-- CALENDARIO DE DEMANDA -->
-<div class="card demanda-bloque">
-
-    <div class="card-header">
-
-        <h3>
-            <i class="fa-solid fa-calendar-days"></i>
-            Calendario de demanda
-        </h3>
-
-        <span class="demanda-leyenda">
-            🟢 Baja &nbsp;
-            🟡 Media &nbsp;
-            🔴 Alta
-        </span>
-
-    </div>
-
-    <div class="card-body">
-
-        <div
-            class="demanda-calendario"
-            id="demanda-calendario"
-        ></div>
-
-        <p class="demanda-ayuda">
-            Selecciona una fecha para consultar el nivel
-            de demanda correspondiente. Las fechas futuras
-            muestran estimaciones del modelo y las fechas
-            históricas muestran información registrada.
-        </p>
-
-        <div
-            class="demanda-detalle"
-            id="demanda-detalle"
-        >
-            Selecciona un día del calendario para visualizar
-            su información.
-        </div>
-
-    </div>
-
-</div>
-
-<!-- ANÁLISIS HISTÓRICO -->
-<div class="demanda-columnas">
-
-    <!-- GRÁFICO DE ATENCIONES -->
-    <div class="card">
-
-        <div class="card-header">
-            <h3>
-                <i class="fa-solid fa-chart-column"></i>
-                Evolución de atenciones
-            </h3>
-        </div>
-
-        <div class="card-body">
-
-            <div
-                class="demanda-grafico"
-                id="demanda-grafico"
-            ></div>
-
-            <p class="demanda-ayuda">
-                Distribución de las atenciones registradas
-                durante los últimos 45 días del historial
-                disponible.
-            </p>
-
-        </div>
-
-    </div>
-
-    <!-- MOTIVOS FRECUENTES -->
-    <div class="card">
-
-        <div class="card-header">
-            <h3>
-                <i class="fa-solid fa-clipboard-list"></i>
-                Motivos de atención más frecuentes
-            </h3>
-        </div>
-
-        <div class="card-body">
-
-            <div id="demanda-motivos"></div>
-
-            <p class="demanda-ayuda">
-                Principales motivos de consulta registrados
-                durante los últimos 30 días del historial.
-            </p>
-
-        </div>
-
-    </div>
-
-</div>
-
-<!-- JAVASCRIPT DEL MÓDULO -->
-<script
-    src="{{ url_for('static', filename='js/demanda.js') }}"
-    defer
-></script>
-
+<section aria-labelledby="explicacion-titulo"><h3 id="explicacion-titulo">¿Cómo funcionan los modelos?</h3>
+<div class="card card-body ml-explicaciones">
+<p>El <strong>aprendizaje supervisado</strong> aprende relaciones entre características conocidas y resultados históricos. La <strong>clasificación</strong> estima una etiqueta BAJA, MEDIA o ALTA. La <strong>regresión</strong> estima una cantidad no negativa de atenciones.</p>
+<dl><dt>Random Forest</dt><dd>Combina muchos árboles y agrega sus votos o estimaciones para reducir variaciones.</dd>
+<dt>Decision Tree</dt><dd>Divide los datos mediante reglas sobre características. Es sencillo, pero puede ajustarse demasiado al historial.</dd>
+<dt>Gradient Boosting</dt><dd>Construye árboles sucesivos que corrigen errores de los anteriores.</dd>
+<dt>KNN</dt><dd>Busca días cercanos en las características escaladas y combina sus resultados. Cercanía de calendario no garantiza demanda similar.</dd>
+<dt>Logistic Regression</dt><dd>Combina características para estimar probabilidades de las clases. El nombre no implica que prediga cantidades.</dd>
+<dt>Ridge Regression</dt><dd>Estima cantidades con una relación lineal y penalización de coeficientes para limitar el sobreajuste.</dd></dl>
+<p><strong>Selección:</strong> tres ventanas cronológicas expansivas dentro del 80 % inicial. Gana el mayor F1 macro (desempate por accuracy y recall) o el menor MAE (desempate por RMSE). El escalado se ajusta sólo con cada entrenamiento. No se usan resultados futuros ni cantidades del día objetivo como entradas.</p>
+<dl><dt>Accuracy</dt><dd>Fracción de etiquetas correctas.</dd><dt>Precision y recall macro</dt><dd>Promedios por clase de la precisión de las alertas y de la proporción de casos detectados.</dd><dt>F1 macro</dt><dd>Promedio del equilibrio entre precision y recall para cada clase, con igual peso para las tres etiquetas.</dd><dt>MAE / RMSE</dt><dd>Error en atenciones; RMSE penaliza más los errores grandes. Menor es mejor.</dd><dt>R²</dt><dd>Comparación del error con la variabilidad real; puede ser negativo. No se informa con variación insuficiente.</dd></dl>
+<p>Las referencias predicen la clase más frecuente o la media del entrenamiento. Una mejora orientativa exige superar la referencia por más de 0,02 F1 o reducir MAE más del 5 % en validación y prueba. Esto no demuestra significación estadística ni fiabilidad operativa.</p>
+<div id="ml-entrenamiento-real"></div><div id="ml-importancia"></div><ul id="ml-limitaciones"></ul>
+</div></section>
+{% endblock %}
+{% block scripts %}
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.8/dist/chart.umd.min.js" defer></script>
+<script src="{{ url_for('static', filename='js/demanda.js') }}" defer></script>
 {% endblock %}

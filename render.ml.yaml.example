@@ -1,0 +1,16 @@
+# Ejemplo revisable: no se despliega automáticamente. Requiere artefactos propios
+# versionados en el mismo commit que sirve la aplicación web.
+services:
+  - type: cron
+    name: clinica-ml-pronosticos
+    runtime: python
+    schedule: "0 6 * * *" # 01:00 de Perú; Render usa UTC
+    buildCommand: pip install -r requirements.txt
+    startCommand: python -m ml.cli pronosticar --dias 30
+    envVars:
+      - key: PYTHON_VERSION
+        value: 3.12.14
+      - key: DATABASE_URL
+        sync: false # misma base Supabase, configurar explícitamente
+      - key: ML_MODEL_DIR
+        value: ./ml/modelos_entrenados

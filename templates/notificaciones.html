@@ -1,0 +1,3 @@
+{% extends 'base.html' %}{% block titulo %}Notificaciones — CLINICA_P{% endblock %}
+{% block contenido %}<link rel="stylesheet" href="{{ url_for('static',filename='css/agentes.css') }}"><div id="cuenta-app" data-csrf="{{ csrf }}"><h2>Notificaciones</h2><p>Resultados administrativos y avisos de pronósticos experimentales. El estado “aceptado por proveedor” no confirma entrega en la bandeja de correo.</p><p id="cuenta-estado" role="status"></p><div id="notificaciones-lista" class="ag-lista"></div></div>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='js/cuenta.js') }}" defer></script>{% endblock %}

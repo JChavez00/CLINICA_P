@@ -1,0 +1,5 @@
+{
+  "fuente": "Configuración manual del administrador. Sin calendario oficial incorporado.",
+  "limitacion": "Una fecha no configurada se supone no feriada; confirmar y completar antes de uso operativo. Se conservan los indicadores del historial al entrenar.",
+  "fechas": {}
+}

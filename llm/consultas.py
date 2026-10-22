@@ -44,153 +44,11 @@ def _expresion_mes(columna_fecha):
 # ============================================================
 
 def obtener_resumen():
-    """Obtiene estadísticas sin exponer registros individuales."""
-
-    ultima = db.session.query(
-        func.max(Atencion.fecha)
-    ).scalar()
-
-    total = db.session.query(
-        func.count(Atencion.id)
-    ).scalar() or 0
-
-    if not ultima:
-        return {
-            "total_atenciones": 0,
-            "mensaje": "No hay atenciones registradas."
-        }
-
-    inicio = ultima - timedelta(days=89)
-
-    # --------------------------------------------------------
-    # ATENCIONES POR MES
-    # Compatible con SQLite y PostgreSQL
-    # --------------------------------------------------------
-
-    mes = _expresion_mes(Atencion.fecha)
-
-    por_mes = (
-        db.session.query(
-            mes.label("mes"),
-            func.count(Atencion.id).label("cantidad")
-        )
-        .group_by(mes)
-        .order_by(mes.desc())
-        .limit(12)
-        .all()
-    )
-
-    # --------------------------------------------------------
-    # ATENCIONES POR DÍA
-    # --------------------------------------------------------
-
-    por_dia = (
-        db.session.query(
-            Atencion.fecha,
-            func.count(Atencion.id).label("cantidad")
-        )
-        .filter(
-            Atencion.fecha >= inicio,
-            Atencion.fecha <= ultima
-        )
-        .group_by(Atencion.fecha)
-        .order_by(Atencion.fecha.desc())
-        .limit(90)
-        .all()
-    )
-
-    # --------------------------------------------------------
-    # MOTIVOS MÁS FRECUENTES
-    # --------------------------------------------------------
-
-    cantidad_motivos = func.count(Atencion.id)
-
-    motivos = (
-        db.session.query(
-            Atencion.motivo,
-            cantidad_motivos.label("cantidad")
-        )
-        .filter(
-            Atencion.fecha >= inicio,
-            Atencion.fecha <= ultima
-        )
-        .group_by(Atencion.motivo)
-        .order_by(cantidad_motivos.desc())
-        .limit(10)
-        .all()
-    )
-
-    # --------------------------------------------------------
-    # NIVELES DE DEMANDA
-    # --------------------------------------------------------
-
-    niveles = (
-        db.session.query(
-            MLDemandaDiaria.nivel_demanda,
-            func.count(MLDemandaDiaria.id).label("dias")
-        )
-        .group_by(MLDemandaDiaria.nivel_demanda)
-        .all()
-    )
-
-    # --------------------------------------------------------
-    # RESPUESTA ESTADÍSTICA
-    # --------------------------------------------------------
-
-    return {
-        "origen": (
-            "Base de datos del sistema clínico; "
-            "historial simulado para demostración"
-        ),
-        "ultima_fecha_registrada": ultima.isoformat(),
-        "periodo_reciente": {
-            "desde": inicio.isoformat(),
-            "hasta": ultima.isoformat()
-        },
-        "total_atenciones_historicas": total,
-        "atenciones_por_mes": [
-            {
-                "mes": str(m),
-                "cantidad": n
-            }
-            for m, n in por_mes
-        ],
-        "atenciones_por_dia_recientes": [
-            {
-                "fecha": f.isoformat(),
-                "cantidad": n
-            }
-            for f, n in por_dia
-        ],
-        "motivos_frecuentes_recientes": [
-            {
-                "motivo": (
-                    str(m)[:100]
-                    if m else "Sin especificar"
-                ),
-                "cantidad": n
-            }
-            for m, n in motivos
-        ],
-        "dias_por_nivel_demanda": [
-            {
-                "nivel": str(n),
-                "dias": c
-            }
-            for n, c in niveles
-        ],
-        "modelo_ml": {
-            "tipo": (
-                "Clasificador de demanda "
-                "BAJA/MEDIA/ALTA"
-            ),
-            "exactitud_evaluada": "43.64 %",
-            "limitacion": (
-                "Igual al modelo de referencia; "
-                "no validado para decisiones reales"
-            )
-        }
-    }
+    """Compatibilidad: agregados seguros, sin texto libre ni metricas fijas."""
+    from ml.datos import hoy_peru
+    from .herramientas import estadisticas_periodo
+    hoy = hoy_peru()
+    return estadisticas_periodo({}, {"desde": hoy.replace(day=1).isoformat(), "hasta": hoy.isoformat()})
 
 
 # ============================================================
@@ -239,8 +97,8 @@ def interpretar_busqueda(pregunta):
             r"historia clinica|expediente|"
             r"ultima atencion|ultimo diagnostico|"
             r"receta|diagnostico|"
-            r"busca(?:r|me)? a|"
-            r"muestra(?:me)? a|"
+            r"busca(?:r|me)? al?|"
+            r"muestra(?:me)? al?|"
             r"datos de|atenciones de"
             r")\b",
             normal
@@ -258,13 +116,14 @@ def interpretar_busqueda(pregunta):
             r"(?:dni|paciente|historial|"
             r"historia clinica|expediente|"
             r"datos de|atenciones de|"
+            r"diagnosticos? de|receta de|"
             r"ultima atencion de|"
             r"ultimo diagnostico de|"
-            r"busca(?:r|me)? a|"
-            r"muestra(?:me)? a)"
+            r"busca(?:r|me)? al?\b|"
+            r"muestra(?:me)? al?\b)"
             r"\s*"
-            r"(?:de|del|al|a|con|por|"
-            r"llamado|llamada|nombre)?"
+            r"(?:(?:del|de|al|a|con|por|"
+            r"llamado|llamada|nombre)\s+)?"
             r"\s*(.*)$"
         )
     ]
@@ -281,8 +140,8 @@ def interpretar_busqueda(pregunta):
             break
 
     nombre = re.sub(
-        r"^(?:nombre|apellidos?|paciente|"
-        r"de|del|al|a|con|por)\s+",
+        r"^(?:(?:nombre|apellidos?|paciente|"
+        r"del|de|al|a|con|por)\s+)+",
         "",
         nombre
     ).strip()

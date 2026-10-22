@@ -32,6 +32,17 @@ def create_app():
     with app.app_context():
         db.create_all()
 
+    from llm.cuenta_web import bp_cuenta
+    app.register_blueprint(bp_cuenta)
+
+    @app.before_request
+    def validar_version_sesion():
+        if session.get("autenticado"):
+            from llm.perfil import obtener
+            perfil = obtener()
+            if perfil and session.get("sesion_version", 1) != perfil.sesion_version:
+                session.clear()
+
     # ---------------------------------------------------------------
     # Autenticación simple (un solo usuario: el doctor/administrador)
     # ---------------------------------------------------------------
@@ -49,15 +60,24 @@ def create_app():
             return redirect(url_for("dashboard"))
 
         if request.method == "POST":
+            import hmac
+            if not hmac.compare_digest(request.form.get("csrf", ""), session.get("login_csrf", "")) or not session.get("login_csrf"):
+                return "Formulario caducado. Recarga la página.", 403
             usuario = request.form.get("usuario", "")
             clave = request.form.get("clave", "")
-            if usuario == app.config["APP_USERNAME"] and clave == app.config["APP_PASSWORD"]:
+            from llm.perfil import autenticar
+            perfil = autenticar(usuario, clave)
+            if perfil:
+                session.clear()
                 session.permanent = True
                 session["autenticado"] = True
                 session["usuario"] = usuario
+                session["sesion_version"] = perfil.sesion_version
                 return redirect(url_for("dashboard"))
             flash("Usuario o clave incorrectos.", "error")
 
+        import secrets
+        session.setdefault("login_csrf", secrets.token_urlsafe(32))
         return render_template("login.html")
 
     @app.route("/logout")

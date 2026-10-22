@@ -1,0 +1,21 @@
+{% extends 'base.html' %}
+{% block titulo %}Mi perfil — CLINICA_P{% endblock %}
+{% block contenido %}
+<link rel="stylesheet" href="{{ url_for('static',filename='css/agentes.css') }}">
+<div id="cuenta-app" data-csrf="{{ csrf }}">
+<div class="page-header"><div><h2>Mi perfil</h2><p>Cuenta principal del médico / administrador</p></div></div>
+<p id="cuenta-estado" role="status"></p>
+<form id="perfil-form" class="card ag-form">
+<div class="campo"><label>Usuario</label><input value="{{ perfil.usuario }}" disabled></div>
+<div class="campo"><label>Rol</label><input value="{{ perfil.rol }}" disabled></div>
+<div class="campo"><label for="nombre">Nombre completo</label><input id="nombre" value="{{ perfil.nombre }}" maxlength="160" required></div>
+<div class="campo"><label for="correo">Correo destinatario</label><input id="correo" type="email" value="{{ perfil.correo }}" maxlength="254"></div>
+<div class="campo"><label for="zona">Zona horaria IANA</label><input id="zona" value="{{ perfil.zona }}" list="zonas" required><datalist id="zonas"><option>America/Lima</option><option>America/Bogota</option><option>UTC</option></datalist></div>
+<p class="ag-nota">Verificación del correo: {{ 'Verificado' if perfil.verificado else 'Pendiente' }}. Proveedor: {{ 'Configurado; envío pendiente de comprobar' if correo_configurado else 'Pendiente de configuración' }}. La zona se aplica a las tareas nuevas; las existentes conservan su horario.</p>
+<label><input type="checkbox" id="avisos" {{ 'checked' if perfil.avisos }}> Recibir avisos por correo</label>
+<fieldset class="ag-secciones"><legend>Eventos que deseo recibir</legend>{% for evento in eventos %}<label><input type="checkbox" name="evento" value="{{ evento }}" {{ 'checked' if evento in perfil.eventos }}> {{ titulos[evento] }}</label>{% endfor %}</fieldset>
+<button class="btn btn-primario" type="submit">Guardar perfil</button><button class="btn" id="verificar" type="button">Enviar enlace de verificación</button>
+</form>
+<form id="clave-form" class="card ag-form"><h3>Cambiar contraseña</h3><div class="campo"><label for="actual">Contraseña actual</label><input type="password" id="actual" autocomplete="current-password" required></div><div class="campo"><label for="nueva">Nueva contraseña (12–128 caracteres)</label><input type="password" id="nueva" autocomplete="new-password" minlength="12" maxlength="128" required></div><div class="campo"><label for="repetir">Repetir nueva contraseña</label><input type="password" id="repetir" autocomplete="new-password" required></div><button class="btn btn-primario">Cambiar contraseña y cerrar sesiones</button></form>
+</div>{% endblock %}
+{% block scripts %}<script src="{{ url_for('static',filename='js/cuenta.js') }}" defer></script>{% endblock %}
