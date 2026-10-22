@@ -1,4 +1,6 @@
-"""Dashboard ML autenticado. GET sólo lee: el cron genera los pronósticos."""
+"""Dashboard ML autenticado. Persistencia sólo por POST explícito o cron."""
+import hmac
+import secrets
 from datetime import timedelta
 from functools import wraps
 
@@ -23,6 +25,13 @@ def proteger():
         return redirect(url_for("login"))
 
 
+@bp_demanda.after_request
+def cabeceras(respuesta):
+    respuesta.headers["Cache-Control"]="no-store"
+    respuesta.headers["X-Content-Type-Options"]="nosniff"
+    return respuesta
+
+
 def api(vista):
     @wraps(vista)
     def ejecutar(*args, **kwargs):
@@ -33,6 +42,7 @@ def api(vista):
         except (ValueError, TypeError) as exc:
             return jsonify({"error": str(exc)}), 400
         except SQLAlchemyError:
+            db.session.rollback()
             current_app.logger.exception("Error de persistencia ML")
             return jsonify({"error": "No se pudo leer ML. Verifica la base y ejecuta python -m ml.cli inicializar."}), 503
     return ejecutar
@@ -40,7 +50,32 @@ def api(vista):
 
 @bp_demanda.route("/demanda")
 def pagina():
-    return render_template("demanda.html", manana=(hoy_peru() + timedelta(days=1)).isoformat())
+    session.setdefault("ml_csrf",secrets.token_urlsafe(32))
+    return render_template("demanda.html", manana=(hoy_peru() + timedelta(days=1)).isoformat(),ml_csrf=session["ml_csrf"])
+
+
+@bp_demanda.route("/api/ml/pronosticos/generar",methods=["POST"])
+def generar_guardados():
+    token=request.headers.get("X-CSRF-Token","")
+    esperado=session.get("ml_csrf","")
+    if not esperado or not hmac.compare_digest(token.encode(),esperado.encode()):
+        return jsonify(error="Recarga la página antes de generar pronósticos."),403
+    if request.content_length and request.content_length>2048:
+        return jsonify(error="Solicitud demasiado extensa."),413
+    return _generar_guardados()
+
+
+@api
+def _generar_guardados():
+    datos=request.get_json(silent=True)
+    if not isinstance(datos,dict) or set(datos)!={"fecha","dias","confirmar"} or datos.get("confirmar") is not True:
+        raise ValueError("Se requiere confirmar la generación con fecha y horizonte.")
+    fecha=validar_fecha(datos["fecha"],futura=True)
+    dias=validar_periodo(datos["dias"])
+    from ml.pronosticos import generar
+    resultado=generar(dias,fecha)
+    return {**resultado,"pronosticos":consultar(fecha,dias),
+            "mensaje":"Pronósticos guardados. Repetir el mismo día y versión conserva la emisión existente. Son estimaciones experimentales."}
 
 
 @bp_demanda.route("/api/ml/modelos")
@@ -86,4 +121,4 @@ def datos():
             "historial": {"desde": df.fecha.iloc[0].isoformat(), "hasta": df.fecha.iloc[-1].isoformat(),
                           "dias": len(df), "atenciones": int(df.total_atenciones.sum())},
             "auditoria": auditoria, "entrenamiento": meta,
-            "aviso": "Experimental. Consulta las métricas reales y compara con la referencia. Los pronósticos automáticos son emisiones guardadas por la tarea programada."}
+            "aviso": "Experimental. Consulta las métricas reales y compara con la referencia. Las emisiones se guardan mediante generación manual explícita o la tarea programada."}

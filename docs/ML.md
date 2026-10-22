@@ -235,3 +235,13 @@ PostgreSQL viva: no se proporcionó un entorno de pruebas autorizado.
   conocidas por adelantado y evaluación temporal repetida en nuevas ventanas.
 - Activación real del cron y validación en PostgreSQL requieren un entorno
   autorizado; no se realizaron operaciones productivas.
+# Generar emisiones desde la web
+
+El panel permite guardar pronósticos sin usar la terminal de Render: seleccionar
+fecha futura y horizonte 7, 15 o 30 días y pulsar **Generar y guardar pronósticos
+del período seleccionado**. Es un POST autenticado con CSRF y confirmación
+explícita, limitado a los horizontes existentes. Reutiliza los diez modelos
+guardados y la persistencia idempotente del cron; no reentrena ni usa LLM.
+`POST /api/ml/pronosticos/generar` recibe `fecha`, `dias` y `confirmar: true`.
+Las consultas GET siguen sin guardar emisiones. El cron diario es independiente
+y debe configurarse para renovar automáticamente el horizonte.

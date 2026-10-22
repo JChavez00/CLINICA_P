@@ -10,7 +10,7 @@
 
 <section aria-labelledby="resumen-titulo"><h3 id="resumen-titulo">1. Resumen general</h3>
 <div class="ml-tarjetas">
-{% for id, etiqueta in [('total','Atenciones históricas'),('dias','Días analizados'),('clasificador','Clasificador seleccionado'),('regresor','Regresor seleccionado'),('manana','Demanda de mañana'),('cantidad','Atenciones estimadas mañana'),('actualizacion','Última emisión automática')] %}
+{% for id, etiqueta in [('total','Atenciones históricas'),('dias','Días analizados'),('clasificador','Clasificador seleccionado'),('regresor','Regresor seleccionado'),('manana','Demanda de mañana'),('cantidad','Atenciones estimadas mañana'),('actualizacion','Última emisión guardada')] %}
 <div class="stat-card"><div class="valor" id="ml-{{ id }}">—</div><div class="etiqueta">{{ etiqueta }}</div></div>
 {% endfor %}</div></section>
 
@@ -19,10 +19,16 @@
 <div class="campo"><label for="demanda-fecha">Desde</label><input type="date" id="demanda-fecha" value="{{ manana }}" required></div>
 <div class="campo"><label for="demanda-dias">Horizonte</label><select id="demanda-dias"><option value="7">7 días</option><option value="15">15 días</option><option value="30">30 días</option></select></div>
 <button class="btn btn-primario" type="submit">Consultar emisiones guardadas</button></form>
+<div class="card card-body">
+<h4>Guardar nuevos pronósticos</h4>
+<p>Usa la fecha y el horizonte seleccionados arriba. Se ejecutan los modelos ya entrenados y se guardan sus estimaciones en la base de datos. No se reentrena ni se llama a Gemini o Groq. Sólo admite fechas futuras.</p>
+<button id="ml-generar-guardados" class="btn btn-primario" type="button" data-csrf="{{ ml_csrf }}">Generar y guardar pronósticos del período seleccionado</button>
+<p id="ml-generacion-estado" role="status" aria-live="polite"></p>
+</div>
 <div class="demanda-columnas"><div class="card card-body"><h4>Atenciones por día</h4><div class="ml-chart"><canvas id="ml-linea" aria-label="Atenciones observadas y estimadas" role="img"></canvas></div></div>
 <div class="card card-body"><h4>Calendario de demanda</h4><div id="demanda-calendario" class="demanda-calendario"></div><p id="demanda-detalle" aria-live="polite" class="demanda-detalle">Selecciona una fecha.</p></div></div>
 <details class="card card-body"><summary>Datos y comparación con emisiones anteriores</summary><div class="ml-scroll" id="ml-historial-tabla"></div></details>
-<p class="demanda-ayuda">Esta consulta no genera ni guarda predicciones. Si faltan emisiones, debe ejecutarse la tarea programada. Una fecha sin registro no se considera cero.</p>
+<p class="demanda-ayuda">Consultar emisiones sólo lee datos. Si faltan, usa “Generar y guardar pronósticos” o configura la tarea programada diaria. Una fecha sin registro no se considera cero.</p>
 </section>
 
 <section aria-labelledby="comparacion-titulo"><h3 id="comparacion-titulo">3. Comparación de las cinco familias</h3>

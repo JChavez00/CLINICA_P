@@ -143,6 +143,35 @@ class IntegracionTests(unittest.TestCase):
         with self.assertRaises(ValueError): generar(8)
         with self.assertRaises(ValueError): generar(7, hoy_peru())
 
+    def test_generacion_web_autenticada_confirmada_y_sin_reentrenar(self):
+        c=self.app.test_client();url='/api/ml/pronosticos/generar'
+        inicio=self.fecha+timedelta(days=60)
+        datos={'fecha':inicio.isoformat(),'dias':7,'confirmar':True}
+        self.assertEqual(c.post(url,json=datos).status_code,401)
+        with c.session_transaction() as s:s['autenticado']=True;s['ml_csrf']='csrf-ml-test'
+        self.assertEqual(c.post(url,json=datos).status_code,403)
+        cab={'X-CSRF-Token':'csrf-ml-test'}
+        for cambio in ({'confirmar':False},{'fecha':hoy_peru().isoformat()},{'dias':365},{'otra_opcion':True}):
+            self.assertEqual(c.post(url,json={**datos,**cambio},headers=cab).status_code,400)
+        try:
+            with patch('ml.entrenar_modelo.entrenar',side_effect=AssertionError('No reentrenar')):
+                for _ in range(2):
+                    r=c.post(url,json=datos,headers=cab)
+                    self.assertEqual(r.status_code,200,r.json)
+                    self.assertEqual(len(r.json['pronosticos']),7)
+                    self.assertTrue(all(p['tipo']=='predicción' for p in r.json['pronosticos']))
+            self.assertEqual(MLPronostico.query.filter(MLPronostico.fecha_objetivo>=inicio).count(),14)
+        finally:
+            MLPronostico.query.filter(MLPronostico.fecha_objetivo>=inicio).delete();db.session.commit()
+
+    def test_generacion_web_sin_modelos_informa_error(self):
+        c=self.app.test_client()
+        with c.session_transaction() as s:s['autenticado']=True;s['ml_csrf']='csrf-ml-test'
+        with tempfile.TemporaryDirectory() as ruta,patch.dict(os.environ,{'ML_MODEL_DIR':ruta}):
+            r=c.post('/api/ml/pronosticos/generar',json={'fecha':self.fecha.isoformat(),'dias':7,'confirmar':True},headers={'X-CSRF-Token':'csrf-ml-test'})
+        self.assertEqual(r.status_code,503)
+        self.assertIn('No hay modelos',r.json['error'])
+
     def test_historico_compara_emisiones(self):
         generar(7, self.fecha)
         r = MLDemandaDiaria(fecha=self.fecha,total_atenciones=4,nivel_demanda="MEDIA",dia_semana=self.fecha.weekday(),mes=self.fecha.month,es_feriado=False)

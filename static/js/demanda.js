@@ -3,7 +3,7 @@
   const $ = id => document.getElementById(id);
   const charts = {};
   const fmt = v => typeof v === 'number' ? v.toLocaleString('es-PE', {maximumFractionDigits: 3}) : v ?? '—';
-  const hora = iso => iso ? new Date(iso).toLocaleString('es-PE', {timeZone:'America/Lima'}) + ' (Perú)' : 'Sin emisiones automáticas';
+  const hora = iso => iso ? new Date(iso).toLocaleString('es-PE', {timeZone:'America/Lima'}) + ' (Perú)' : 'Sin emisiones guardadas';
   const texto = (id, v) => { $(id).textContent = v; };
   function elemento(tag, textoValor) { const n = document.createElement(tag); if (textoValor != null) n.textContent = textoValor; return n; }
   function tabla(id, columnas, filas) {
@@ -19,8 +19,8 @@
       responsive: true, maintainAspectRatio: false, scales: {y: {beginAtZero: true}}, ...opciones
     }});
   }
-  async function api(url) {
-    const r = await fetch(url, {headers: {'Accept': 'application/json'}});
+  async function api(url, opciones = {}) {
+    const r = await fetch(url, {...opciones, headers: {'Accept': 'application/json', ...opciones.headers}});
     const d = await r.json(); if (!r.ok) throw new Error(d.error || 'No se pudo consultar.'); return d;
   }
   function error(e) { $('demanda-error').hidden = false; texto('demanda-error', e.message); }
@@ -69,7 +69,7 @@
       if (futuros.length>1) decisiones.append(elemento('p', `Cambio estimado entre primera y última emisión del período: ${futuros.at(-1).cantidad-futuros[0].cantidad} atenciones. No es una tendencia estadísticamente validada.`));
     }
     const faltan=p.filter(d=>d.tipo==='sin pronóstico').length;
-    if(faltan) decisiones.append(elemento('p', `${faltan} fechas sin emisión. Ejecutar la tarea programada; no se imputan valores.`));
+    if(faltan) decisiones.append(elemento('p', `${faltan} fechas sin emisión. Usa “Generar y guardar pronósticos” para un período futuro o ejecuta la tarea programada; no se imputan valores.`));
     decisiones.append(elemento('p','Todos los modelos siguen siendo experimentales. Verifica las métricas frente a la referencia antes de usar estas sugerencias.'));
   }
   async function cargar() {
@@ -87,6 +87,19 @@
     finally {boton.disabled=false;}
   }
   $('ml-filtros').addEventListener('submit',e=>{e.preventDefault();cargar();});
+  $('ml-generar-guardados').addEventListener('click',async e=>{
+    const boton=e.currentTarget,fecha=$('demanda-fecha').value,dias=Number($('demanda-dias').value);
+    boton.disabled=true; $('demanda-error').hidden=true;
+    texto('ml-generacion-estado',`Generando y guardando ${dias} días desde ${fecha}…`);
+    try {
+      const d=await api('/api/ml/pronosticos/generar',{method:'POST',headers:{'Content-Type':'application/json','X-CSRF-Token':boton.dataset.csrf},body:JSON.stringify({fecha,dias,confirmar:true})});
+      $('demanda-fecha').value=fecha; $('demanda-dias').value=String(dias);
+      await cargar();
+      const disponibles=d.pronosticos.filter(p=>p.tipo==='predicción').length;
+      texto('ml-generacion-estado',`${d.mensaje} ${disponibles} fechas con pronóstico disponibles en el período seleccionado. Esta acción no activa el cron diario.`);
+    } catch(e) {error(e);texto('ml-generacion-estado','No se pudo completar la generación. Revisa el mensaje de error.');}
+    finally {boton.disabled=false;}
+  });
   $('ml-manual').addEventListener('submit',async e=>{
     e.preventDefault(); const boton=e.target.querySelector('button'); boton.disabled=true; $('demanda-error').hidden=true;
     try {
