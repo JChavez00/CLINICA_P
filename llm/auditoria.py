@@ -1,5 +1,6 @@
 """Auditoría técnica: sin mensajes, identificadores clínicos ni errores crudos."""
 import os
+import logging
 from datetime import timedelta
 from uuid import uuid4
 
@@ -26,4 +27,10 @@ def registrar(agente,modulo,herramienta,duracion,estado,error=None):
     ejecucion=AgenteEjecucion(id=str(uuid4()),agente=agente,modulo=modulo,herramienta=herramienta,
                              duracion_ms=int(duracion*1000),estado=estado,error_codigo=error)
     db.session.add(ejecucion); db.session.commit()
+    if error:
+        # Gunicorn/Render recibe el código controlado, nunca prompts, fichas,
+        # credenciales ni el texto de la excepción del proveedor.
+        logging.getLogger("clinica.agentes").warning(
+            "agente=%s modulo=%s herramienta=%s estado=%s error_codigo=%s ejecucion=%s",
+            agente, modulo, herramienta, estado, error, ejecucion.id)
     return ejecucion.id

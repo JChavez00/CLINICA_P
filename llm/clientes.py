@@ -39,9 +39,16 @@ def solicitar(proveedor, instrucciones, datos, esquema):
                 config=types.GenerateContentConfig(system_instruction=sistema, response_mime_type="application/json", temperature=.1, max_output_tokens=1400))
             texto = r.text
         else:
+            formato={"type":"json_object"}
+            # El plan tiene argumentos abiertos; no es compatible con strict.
+            # La interpretación sí tiene un contrato cerrado y enums por consulta.
+            if (esquema.get("title")=="Interpretacion"
+                    and modelo(proveedor) in ("openai/gpt-oss-20b","openai/gpt-oss-120b")):
+                formato={"type":"json_schema","json_schema":{
+                    "name":"interpretacion_administrativa","strict":True,"schema":esquema}}
             r = cliente.chat.completions.create(model=modelo(proveedor),
                 messages=[{"role":"system", "content":sistema}, {"role":"user", "content":mensaje}],
-                response_format={"type":"json_object"}, temperature=.1,
+                response_format=formato, temperature=.1,
                 reasoning_effort="low", max_completion_tokens=1800)
             texto = r.choices[0].message.content
         if not texto or len(texto) > 20000:

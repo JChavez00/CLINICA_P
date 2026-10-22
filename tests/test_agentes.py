@@ -227,6 +227,16 @@ class AgentesTests(unittest.TestCase):
         self.assertEqual(r.status_code,200);self.assertEqual(r.json['datos']['total_atenciones'],3)
         self.assertEqual(r.json['estado'],'degradado')
 
+    def test_log_de_fallo_sin_datos_clinicos(self):
+        self.llm.side_effect=ErrorAgente('proveedor_sin_clave',503)
+        with self.assertLogs('clinica.agentes',level='WARNING') as registro:
+            r=self.post('/api/asistente-ia',{'pregunta':'Busca DNI 12345678'})
+        self.assertEqual(r.status_code,200)
+        logs='\n'.join(registro.output)
+        self.assertIn('error_codigo=proveedor_sin_clave',logs)
+        for privado in ('12345678','ALICIA','DIAGNOSTICO PRIVADO','DOMICILIO PRIVADO'):
+            self.assertNotIn(privado,logs)
+
     def test_plan_malicioso_no_ejecuta_herramientas(self):
         self.llm.return_value={'herramienta':'ejecutar_sql','argumentos':{'sql':'DELETE'}};self.llm.side_effect=None
         r=self.post('/api/asistente-ia',{'pregunta':'Cuantas atenciones hubo en septiembre'})
@@ -244,6 +254,37 @@ class AgentesTests(unittest.TestCase):
         self.llm.side_effect=mock
         r=self.post('/api/asistente-ia',{'pregunta':'Cuantas atenciones hubo en septiembre'})
         self.assertNotIn('99999',r.json['respuesta']);self.assertEqual(r.json['estado'],'degradado')
+
+    def test_comparacion_envia_codigos_exactos_y_ejemplo_valido(self):
+        r=self.post('/api/asistente-ia',{'pregunta':'Compara las atenciones de agosto y septiembre'})
+        self.assertEqual(r.status_code,200);self.assertEqual(r.json['estado'],'ok')
+        _,_,datos,esquema=self.llm.call_args.args
+        self.assertEqual(datos['codigos_hechos_permitidos'],['comparacion'])
+        self.assertEqual(esquema['properties']['hechos']['items']['enum'],['comparacion'])
+        self.assertEqual(esquema['properties']['hechos']['minItems'],1)
+        self.assertEqual(datos['ejemplo_formato_valido'],{'hechos':['comparacion'],'acciones':[]})
+
+    def test_groq_interpretacion_usa_esquema_estricto(self):
+        from llm.base import contrato_interpretacion
+        from unittest.mock import Mock
+        from types import SimpleNamespace
+        cliente=Mock()
+        cliente.chat.completions.create.return_value=SimpleNamespace(choices=[SimpleNamespace(
+            message=SimpleNamespace(content='{"hechos":["comparacion"],"acciones":[]}'))])
+        with patch.dict(os.environ,{'GROQ_API_KEY':'clave-simulada','GROQ_MODEL':'openai/gpt-oss-20b'}),patch('llm.clientes._cliente',return_value=cliente):
+            salida=self.solicitar_real('groq','Selecciona códigos JSON',{'hechos_disponibles':{'comparacion':'Hecho sintético'}},contrato_interpretacion({'comparacion':'Hecho sintético'}))
+        self.assertEqual(salida['hechos'],['comparacion'])
+        formato=cliente.chat.completions.create.call_args.kwargs['response_format']
+        self.assertEqual(formato['type'],'json_schema');self.assertTrue(formato['json_schema']['strict'])
+
+    def test_recomendacion_rechazada_no_aparece_en_respaldo(self):
+        def mock(p,i,d,e):
+            if 'operacion_sugerida' in d:return modelo_simulado(p,i,d,e)
+            return {'hechos':list(d['hechos_disponibles']),'acciones':['revisar_duplicados']}
+        self.llm.side_effect=mock
+        r=self.post('/api/asistente-ia',{'pregunta':'Cuantas atenciones hubo en septiembre'})
+        self.assertEqual(r.json['estado'],'degradado')
+        self.assertNotIn('posibles duplicados',r.json['respuesta'])
 
     def test_permisos_y_anonimo(self):
         self.app.config['AGENTES_PERMISOS']=['estadisticas']

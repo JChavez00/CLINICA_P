@@ -96,6 +96,13 @@ ACCIONES={"revisar_personal":"Revisar disponibilidad de personal ante posibles f
           "validar_ml":"Contrastar las predicciones experimentales con observaciones y referencias."}
 
 
+def contrato_interpretacion(hechos):
+    esquema=Interpretacion.model_json_schema()
+    esquema["properties"]["hechos"]["items"]={"type":"string","enum":list(hechos)}
+    esquema["properties"]["hechos"]["minItems"]=1
+    return esquema
+
+
 class Agente:
     nombre=""; proveedor=""; capacidad=""; autorizadas=(); instrucciones=""
     narrar=True
@@ -131,8 +138,15 @@ class Agente:
                 if estado=="ok":
                     try:
                         interpretacion=Interpretacion.model_validate(clientes.solicitar(self.proveedor,
-                            PROMPT_COMUN+self.instrucciones+" Selecciona y ordena únicamente códigos de hechos suministrados. Nunca devuelvas texto libre ni cifras nuevas.",
-                            {"hechos_disponibles":hechos,"acciones_permitidas":ACCIONES},Interpretacion.model_json_schema()))
+                            PROMPT_COMUN+self.instrucciones+
+                            " Selecciona al menos un código EXACTO de codigos_hechos_permitidos. "
+                            "hechos es una lista de claves del diccionario, nunca sus frases ni números. "
+                            "No inventes claves aunque el ejemplo de otra consulta use otras. "
+                            "acciones puede ser una lista vacía. No devuelvas texto libre.",
+                            {"hechos_disponibles":hechos,"codigos_hechos_permitidos":list(hechos),
+                             "acciones_permitidas":ACCIONES,
+                             "ejemplo_formato_valido":{"hechos":[next(iter(hechos))],"acciones":[]}},
+                            contrato_interpretacion(hechos)))
                         if not interpretacion.hechos or any(h not in hechos for h in interpretacion.hechos):
                             raise ErrorAgente("conclusion_sin_sustento")
                         seleccion=interpretacion.hechos; acciones=interpretacion.acciones
@@ -140,7 +154,7 @@ class Agente:
                             raise ErrorAgente("recomendacion_sin_sustento")
                     except (ErrorAgente,ValidationError) as exc:
                         estado="degradado"; error=exc.codigo if isinstance(exc,ErrorAgente) else "conclusion_llm_invalida"
-                        seleccion=list(hechos)
+                        seleccion=list(hechos); acciones=[]
                 else: seleccion=list(hechos)
                 conclusiones=[hechos[h] for h in dict.fromkeys(seleccion)]
                 conclusiones.extend(ACCIONES[a] for a in dict.fromkeys(acciones))

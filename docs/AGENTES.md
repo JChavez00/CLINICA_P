@@ -31,6 +31,14 @@ capacidad, proveedor y lista de herramientas. El registro central asocia cada
 herramienta con una función y un esquema de argumentos. No se ejecutan nombres
 de funciones, SQL o código arbitrarios devueltos por los modelos.
 
+La interpretación recibe un esquema con los códigos de hechos de esa consulta
+como enumeración, una lista explícita y un ejemplo válido. Con Groq GPT-OSS
+20B/120B se envía como `json_schema` con `strict: true`; otros modelos conservan
+el modo JSON con validación local. El plan de herramientas mantiene JSON porque
+sus argumentos son abiertos. Las conclusiones y acciones rechazadas no se muestran
+como aportes de IA. Esto corrige la ambigüedad que producía
+`conclusion_sin_sustento` al comparar períodos.
+
 ## Arquitectura y comunicación
 
 ```mermaid
