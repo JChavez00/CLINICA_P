@@ -30,13 +30,23 @@ def agregados():
     # Datos ya existentes, sólo lectura; no se generan ni se exportan datos personales.
     archivo = RAIZ / "instance" / "policlinico_ficticio.db"
     if not archivo.exists():
-        raise unittest.SkipTest("Requiere el dataset local existente de 273 días; no se inventa uno.")
+        raise unittest.SkipTest("Requiere el historial local existente.")
     with sqlite3.connect(archivo.as_uri() + "?mode=ro", uri=True) as c:
         filas = c.execute("select fecha,total_atenciones,nivel_demanda,es_feriado from ml_demanda_diaria order by fecha").fetchall()
     return [{"fecha": date.fromisoformat(f), "total_atenciones": n, "nivel_demanda": e, "es_feriado": bool(h)} for f,n,e,h in filas]
 
 
 class DatosTests(unittest.TestCase):
+    def test_presentacion_conserva_procedencia_y_no_altera_artefacto(self):
+        from ml.presentacion import metadatos_para_presentacion,AVISO_ORIGINAL,AVISO_PANEL
+        original={'limitaciones':[AVISO_ORIGINAL,'Probabilidades sin calibrar.']}
+        salida=metadatos_para_presentacion(original)
+        self.assertIn(AVISO_PANEL,salida['limitaciones'])
+        self.assertNotIn(AVISO_ORIGINAL,salida['limitaciones'])
+        self.assertIn(AVISO_ORIGINAL,original['limitaciones'])
+        self.assertEqual(salida['procedencia']['tipo'],'sintetico')
+        otro={'limitaciones':['Validación pendiente.']}
+        self.assertEqual(metadatos_para_presentacion(otro),otro)
     def test_fechas(self):
         for f in [None, "2026-02-30", "1999-01-01", "20260101", "2026-1-2", datetime_invalido()]:
             with self.assertRaises(ValueError): validar_fecha(f)
@@ -58,10 +68,11 @@ class DatosTests(unittest.TestCase):
         with self.assertRaises(ValueError): preparar([])
 
     def test_ausencias_no_son_ceros(self):
-        datos = agregados(); df, a = preparar(datos[:2] + datos[3:])
+        datos = agregados(); _, anterior = preparar(datos)
+        df, a = preparar(datos[:2] + datos[3:])
         self.assertEqual(len(df), len(datos)-1)
-        self.assertEqual(a["dias_faltantes"], 1)
-        self.assertEqual(a["dias_cero_explicitos"], 0)
+        self.assertEqual(a["dias_faltantes"], anterior['dias_faltantes']+1)
+        self.assertEqual(a["dias_cero_explicitos"], anterior['dias_cero_explicitos']-int(datos[2]['total_atenciones']==0))
 
     def test_metricas_constante(self):
         self.assertIsNone(medir("regresion", [2,2], [2,2])["r2"])
@@ -96,9 +107,11 @@ class IntegracionTests(unittest.TestCase):
         db.session.remove(); cls.ctx.pop(); _cargar.cache_clear(); cls.entorno.stop(); cls.tmp.cleanup()
 
     def test_carga_y_auditoria(self):
-        self.assertEqual(len(self.df), 273)
-        self.assertEqual(int(self.df.total_atenciones.sum()), 1000)
-        self.assertEqual(self.audit["discrepancias_con_atenciones"], 273)  # DB aislada sin fichas
+        fuente = agregados()
+        self.assertEqual(len(self.df), len(fuente))
+        self.assertEqual(int(self.df.total_atenciones.sum()), sum(r['total_atenciones'] for r in fuente))
+        # Esta copia sólo contiene agregados, sin fichas; los ceros sí coinciden.
+        self.assertEqual(self.audit["discrepancias_con_atenciones"], sum(r['total_atenciones'] > 0 for r in fuente))
 
     def test_diez_modelos_persistidos(self):
         paquete, meta = cargar()
@@ -223,6 +236,13 @@ class IntegracionTests(unittest.TestCase):
 
 
 class AplicacionTests(unittest.TestCase):
+    def test_rutas_de_datos_protegidas_y_demo_retirada(self):
+        from app import app
+        c=app.test_client()
+        self.assertEqual(c.get('/api/buscar-dni/12345678').status_code,302)
+        self.assertEqual(c.get('/api/buscar-direccion?q=prueba').status_code,302)
+        self.assertEqual(c.get('/tareaPruebaApi').status_code,404)
+        self.assertEqual(c.post('/tareaPruebaApi',data={}).status_code,404)
     def test_rutas_existentes_y_dashboard(self):
         # DATABASE_URL fue fijada en memoria antes de importar: no toca Supabase.
         from app import app

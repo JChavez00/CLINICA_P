@@ -10,7 +10,7 @@ from itsdangerous import URLSafeTimedSerializer, BadSignature, SignatureExpired
 from pydantic import ValidationError
 from sqlalchemy.exc import SQLAlchemyError
 
-from models import db, InformeIA, TareaIA, TareaIAEjecucion, AgenteEjecucion
+from models import db, InformeIA, TareaIA, TareaIAEjecucion, AgenteEjecucion, AgenteRecorrido
 from ml.datos import hoy_peru
 from .auditoria import permiso
 from .coordinador import ejecutar_agentes, coordinar
@@ -122,7 +122,7 @@ def generar_reporte():
     resultado=coordinar("reportes","reportes",{"herramienta":"construir_reporte","argumentos":args,"seguro":{"objetivo":"informe_administrativo"}})
     # Colaboración adicional sólo cuando el usuario la selecciona expresamente.
     if r.get("revision_groq") is True:
-        revision=coordinar("chat","analista",{"herramienta":"estadisticas_periodo","argumentos":{"desde":args["desde"],"hasta":args["hasta"]},"seguro":{"objetivo":"revision_agregada"}})
+        revision=coordinar("chat","analista",{"herramienta":"estadisticas_periodo","argumentos":{"desde":args["desde"],"hasta":args["hasta"]},"seguro":{"objetivo":"revision_agregada"}},flujo_id=resultado["ejecucion_id"],padre_id=resultado["ejecucion_id"])
         resultado["datos"]["revision_adicional"]={"agente":revision["agente"],"estado":revision["estado"],"conclusiones":revision["datos"]["conclusiones"]}
     informe=guardar(resultado)
     from .notificaciones import registrar, procesar
@@ -170,7 +170,7 @@ def tarea_preview():
     resultado["zona"]=p.zona
     resultado["proxima"]=proxima(args,p.zona).isoformat()+"Z"
     resultado["avisos"]="Panel y correo verificado según preferencias" if p.avisos and p.verificado else "Panel; correo desactivado o pendiente de verificación"
-    resultado["confirmacion_token"]=firmador().dumps({"id":nonce,"configuracion":args,"zona":p.zona})
+    resultado["confirmacion_token"]=firmador().dumps({"id":nonce,"configuracion":args,"zona":p.zona,"recorrido_id":resultado["ejecucion_id"]})
     return jsonify(resultado)
 
 
@@ -178,14 +178,23 @@ def tarea_preview():
 @protegido("tareas",csrf=True)
 def tarea_confirmar():
     from .tareas import confirmar
+    from .recorridos import Recorrido
+    from .auditoria import registrar
+    from time import monotonic
+    inicio=monotonic()
+    recorrido=Recorrido("local","Python")
     r=cuerpo()
     if r.get("confirmar") is not True: raise ErrorAgente("confirmacion_requerida",400)
     try: plan=firmador().loads(r.get("token",""),max_age=600)
     except (BadSignature,SignatureExpired): raise ErrorAgente("borrador_invalido_o_caducado",400) from None
     existente=db.session.get(TareaIA,plan["id"])
     if not existente and session.get("ia_borrador")!=plan["id"]: raise ErrorAgente("borrador_no_autorizado",403)
+    recorrido.datos.update(flujo_id=plan.get("recorrido_id"),padre_id=plan.get("recorrido_id"))
+    recorrido.paso("confirmacion","Confirmación humana", "El usuario autenticado confirmó un borrador firmado y vigente; se verificaron sesión y CSRF.")
     t=confirmar(plan["configuracion"],plan["id"],zona=plan.get("zona","America/Lima")); session.pop("ia_borrador",None)
-    return jsonify({"id":t.id,"confirmada":t.confirmada,"activa":t.activa}),201
+    recorrido.paso("programacion","Programación guardada", "Se guardó la tarea confirmada. Su ejecución automática depende del programador externo.")
+    identificador=registrar("coordinador","tareas","confirmar_tarea",monotonic()-inicio,"ok",recorrido=recorrido.datos)
+    return jsonify({"id":t.id,"confirmada":t.confirmada,"activa":t.activa,"ejecucion_id":identificador}),201
 
 
 @bp_asistente.route("/api/agentes/tareas",methods=["GET"])
@@ -249,5 +258,20 @@ def tarea_ejecutar(identificador):
 @bp_asistente.route("/api/agentes/ejecuciones")
 @protegido("auditoria")
 def ejecuciones():
-    return jsonify({"ejecuciones":[{"id":e.id,"agente":e.agente,"modulo":e.modulo,"herramienta":e.herramienta,"fecha":e.fecha.isoformat()+"Z","duracion_ms":e.duracion_ms,"estado":e.estado,"error_codigo":e.error_codigo}
-                    for e in AgenteEjecucion.query.order_by(AgenteEjecucion.fecha.desc()).limit(50).all()]})
+    from .recorridos import resumen
+    filas=(db.session.query(AgenteEjecucion,AgenteRecorrido).outerjoin(AgenteRecorrido,
+        AgenteRecorrido.ejecucion_id==AgenteEjecucion.id)
+        .order_by(AgenteEjecucion.fecha.desc(),AgenteEjecucion.id).limit(50).all())
+    return jsonify({"ejecuciones":[resumen(e,r) for e,r in filas],"limite":50})
+
+
+@bp_asistente.route("/api/agentes/ejecuciones/<uuid:identificador>")
+@protegido("auditoria")
+def recorrido_ejecucion(identificador):
+    from .recorridos import detalle
+    datos=detalle(str(identificador))
+    if datos is None: raise ErrorAgente("ejecucion_no_encontrada",404)
+    respuesta=jsonify(datos)
+    if request.args.get("descargar")=="1":
+        respuesta.headers['Content-Disposition']=f'attachment; filename="recorrido-{identificador}.json"'
+    return respuesta

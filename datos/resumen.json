@@ -1,0 +1,104 @@
+{
+  "schema": 1,
+  "tipo": "sintetico",
+  "semilla": 20261023,
+  "desde": "2024-10-23",
+  "hasta": "2026-10-22",
+  "pacientes": 1000,
+  "atenciones": 9569,
+  "dias_con_informacion": 726,
+  "dias_sin_informacion": 4,
+  "dias_cero_explicito": 8,
+  "promedio_diario": 13.18,
+  "maximo_diario": 24,
+  "clases": {
+    "MEDIA": 363,
+    "BAJA": 190,
+    "ALTA": 173
+  },
+  "prefijos": {
+    "45": 121,
+    "73": 121,
+    "62": 117,
+    "40": 126,
+    "70": 122,
+    "48": 121,
+    "60": 132,
+    "71": 140
+  },
+  "pacientes_con_atencion": 1000,
+  "pacientes_con_varias_atenciones": 999,
+  "por_dia_semana": [
+    {
+      "dia": 0,
+      "dias_observados": 103,
+      "atenciones": 1635
+    },
+    {
+      "dia": 1,
+      "dias_observados": 104,
+      "atenciones": 1694
+    },
+    {
+      "dia": 2,
+      "dias_observados": 104,
+      "atenciones": 1494
+    },
+    {
+      "dia": 3,
+      "dias_observados": 105,
+      "atenciones": 1421
+    },
+    {
+      "dia": 4,
+      "dias_observados": 103,
+      "atenciones": 1639
+    },
+    {
+      "dia": 5,
+      "dias_observados": 103,
+      "atenciones": 976
+    },
+    {
+      "dia": 6,
+      "dias_observados": 104,
+      "atenciones": 710
+    }
+  ],
+  "por_mes": {
+    "2024-10": 124,
+    "2024-11": 341,
+    "2024-12": 359,
+    "2025-01": 355,
+    "2025-02": 296,
+    "2025-03": 403,
+    "2025-04": 407,
+    "2025-05": 452,
+    "2025-06": 442,
+    "2025-07": 457,
+    "2025-08": 420,
+    "2025-09": 462,
+    "2025-10": 399,
+    "2025-11": 314,
+    "2025-12": 355,
+    "2026-01": 330,
+    "2026-02": 312,
+    "2026-03": 373,
+    "2026-04": 432,
+    "2026-05": 461,
+    "2026-06": 465,
+    "2026-07": 489,
+    "2026-08": 399,
+    "2026-09": 429,
+    "2026-10": 293
+  },
+  "integridad": "ok",
+  "discrepancias_diarias": 0,
+  "costos": "No aplicable: no existe el campo.",
+  "regla_etiquetas": {
+    "BAJA": "0–9",
+    "MEDIA": "10–17",
+    "ALTA": "18–24"
+  },
+  "capacidad_diaria": 24
+}

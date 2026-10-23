@@ -37,8 +37,9 @@ def campos_no_disponibles(ctx,args):
 def consultar_pronosticos_ml(ctx,args):
     from ml.artefactos import metadatos
     from ml.pronosticos import consultar
+    from ml.presentacion import metadatos_para_presentacion
     try:
-        meta=metadatos()
+        meta=metadatos_para_presentacion(metadatos())
         dias=consultar(args["inicio"],args["dias"])
     except (FileNotFoundError,ValueError):
         return {"disponible":False,"mensaje":"No hay un paquete ML compatible disponible. No se inventan pronósticos."}

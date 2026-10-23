@@ -13,6 +13,7 @@ from ml.artefactos import metadatos, ModeloIncompatible
 from ml.datos import hoy_peru, validar_fecha, cargar_datos
 from ml.predecir_demanda import predecir
 from ml.pronosticos import consultar, validar_periodo
+from ml.presentacion import metadatos_para_presentacion
 
 bp_demanda = Blueprint("demanda", __name__)
 
@@ -83,7 +84,7 @@ def _generar_guardados():
 @bp_demanda.route("/api/ml/metricas")
 @api
 def modelos():
-    return metadatos()
+    return metadatos_para_presentacion(metadatos())
 
 
 @bp_demanda.route("/api/ml/predecir")
@@ -110,7 +111,7 @@ def datos():
     fecha = validar_fecha(request.args.get("fecha", (hoy_peru() + timedelta(days=1)).isoformat()))
     dias = validar_periodo(request.args.get("dias", "7"))
     df, auditoria = cargar_datos()
-    meta = metadatos()
+    meta = metadatos_para_presentacion(metadatos())
     serie = [{"fecha": r.fecha.isoformat(), "total": int(r.total_atenciones), "nivel": r.nivel_demanda}
              for r in df.tail(45).itertuples()]
     actualizacion = db.session.query(func.max(MLPronostico.generado_en)).scalar()

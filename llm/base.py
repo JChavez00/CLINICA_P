@@ -107,7 +107,10 @@ class Agente:
     nombre=""; proveedor=""; capacidad=""; autorizadas=(); instrucciones=""
     narrar=True
 
-    def ejecutar(self,solicitud,contexto=None,modulo="chat"):
+    def ejecutar(self,solicitud,contexto=None,modulo="chat",*,flujo_id=None,padre_id=None):
+        from .recorridos import Recorrido
+        recorrido=Recorrido(self.proveedor,clientes.modelo(self.proveedor),flujo_id,padre_id)
+        recorrido.paso("coordinacion","Coordinador local", "Se seleccionó el agente por módulo e intención autorizada; el coordinador es código Python.")
         inicio=monotonic(); estado="ok"; error=None
         herramienta=solicitud["herramienta"]
         try:
@@ -116,6 +119,7 @@ class Agente:
                 raise ErrorAgente("herramienta_no_autorizada",403)
             especificacion=REGISTRO[herramienta]
             args=especificacion.argumentos.model_validate(solicitud["argumentos"]).model_dump()
+            recorrido.paso("contrato","Permisos y contrato", "Capacidad, herramienta y tipos de argumentos verificados en Python.")
             contratos={n:REGISTRO[n].argumentos.model_json_schema() for n in self.autorizadas}
             # Esta es la ÚNICA entrada al planificador. Se omite contexto privado.
             datos={"intencion":solicitud.get("seguro",{}),"operacion_sugerida":herramienta,
@@ -127,10 +131,13 @@ class Agente:
                 elegidos=REGISTRO[plan.herramienta].argumentos.model_validate(plan.argumentos).model_dump()
                 if elegidos!=args:
                     raise ErrorAgente("plan_cambia_parametros_autorizados")
+                recorrido.paso("plan","Plan del agente", "El proveedor propuso la herramienta autorizada y conservó los parámetros validados.")
             except (ErrorAgente,ValidationError) as exc:
                 # La intención ya está validada localmente: consultas deterministas disponibles.
                 estado="degradado"; error=exc.codigo if isinstance(exc,ErrorAgente) else "plan_llm_invalido"
+                recorrido.paso("plan","Plan del agente", "Plan no disponible o rechazado. Se utiliza la operación previamente validada en Python.", "degradado")
             resultado=especificacion.funcion(contexto or {},args)
+            recorrido.paso("herramienta","Herramienta local", "Se ejecutó la herramienta autorizada; los cálculos y las consultas se resolvieron dentro de la aplicación.")
             conclusiones=[]
             if self.narrar:
                 hechos=hechos_permitidos(resultado)
@@ -152,16 +159,23 @@ class Agente:
                         seleccion=interpretacion.hechos; acciones=interpretacion.acciones
                         if "duplicados" not in hechos and "revisar_duplicados" in acciones:
                             raise ErrorAgente("recomendacion_sin_sustento")
+                        recorrido.paso("interpretacion","Interpretación y validación", "El proveedor seleccionó hechos permitidos; Python verificó el contrato y el sustento de las conclusiones.")
                     except (ErrorAgente,ValidationError) as exc:
                         estado="degradado"; error=exc.codigo if isinstance(exc,ErrorAgente) else "conclusion_llm_invalida"
                         seleccion=list(hechos); acciones=[]
-                else: seleccion=list(hechos)
+                        recorrido.paso("interpretacion","Interpretación y validación", "La interpretación fue rechazada. Se conservaron los hechos calculados por Python sin recomendaciones rechazadas.", "degradado")
+                else:
+                    seleccion=list(hechos)
+                    recorrido.paso("interpretacion","Respuesta de respaldo", "Se omitió la interpretación del proveedor y se utilizaron hechos locales.", "degradado")
                 conclusiones=[hechos[h] for h in dict.fromkeys(seleccion)]
                 conclusiones.extend(ACCIONES[a] for a in dict.fromkeys(acciones))
             resultado["conclusiones"]=conclusiones
             respuesta=resultado.get("respuesta") or resultado.get("mensaje") or "\n".join(conclusiones)
-            identificador=registrar(self.nombre,modulo,herramienta,monotonic()-inicio,estado,error)
+            recorrido.paso("respuesta","Resultado preparado", "Se preparó la respuesta estructurada." + (" La tarea sigue siendo un borrador pendiente de confirmación humana." if herramienta=="preparar_tarea" else ""))
+            duracion_ms=max(round((monotonic()-inicio)*1000),recorrido.anterior)
+            identificador=registrar(self.nombre,modulo,herramienta,duracion_ms/1000,estado,error,recorrido.datos)
             return {"agente":self.nombre,"proveedor":self.proveedor,"modelo":clientes.modelo(self.proveedor),
+                    "herramienta":herramienta,"duracion_ms":duracion_ms,
                     "respuesta":respuesta,"datos":resultado,"estado":estado,"ejecucion_id":identificador,
                     "advertencia":"La IA no estuvo disponible o su salida no pasó la validación; se muestran resultados deterministas." if estado=="degradado" else None}
         except (ErrorAgente,ValidationError,SQLAlchemyError) as exc:
@@ -170,7 +184,8 @@ class Agente:
                 from models import db
                 db.session.rollback()
             codigo=exc.codigo if isinstance(exc,ErrorAgente) else "base_no_disponible" if db_error else "argumentos_invalidos"
-            try: registrar(self.nombre,modulo,herramienta,monotonic()-inicio,"error",codigo)
+            recorrido.paso("error","Operación detenida", "La ejecución terminó por un error controlado; no se registran datos ni mensajes del proveedor.", "error")
+            try: registrar(self.nombre,modulo,herramienta,monotonic()-inicio,"error",codigo,recorrido.datos)
             except SQLAlchemyError:
                 from models import db
                 db.session.rollback()

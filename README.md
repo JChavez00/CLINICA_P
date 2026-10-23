@@ -187,3 +187,16 @@ reales. Antes de usarlo en producción con pacientes:
 Guía de configuración local, Render Cron, archivos privados y correo:
 [PERFIL_AUTOMATIZACION.md](docs/PERFIL_AUTOMATIZACION.md).
 Incluye migración de la cuenta existente, variables y pendientes externos.
+# Historial actualizado
+
+La base local principal contiene el nuevo historial de 1.000 pacientes y 9.569
+atenciones. Sus diez modelos entrenados están en el directorio habitual de ML.
+Consulta [DATOS_SINTETICOS.md](docs/DATOS_SINTETICOS.md) para procedencia,
+métricas, respaldo y sustitución del historial en Supabase.
+
+# Coordinación visual de agentes
+
+Actividad de agentes permite consultar etapas medidas, participantes enlazados,
+validaciones, errores y evidencia JSON. Los resultados enlazan su recorrido.
+Guía para el informe y migración aditiva de Supabase:
+[COORDINACION_AGENTES.md](docs/COORDINACION_AGENTES.md).

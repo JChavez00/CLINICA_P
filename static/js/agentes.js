@@ -44,11 +44,11 @@
     const select=el('select');for(const v of ['diaria','semanal','mensual']){const op=el('option',v);op.value=v;op.selected=v===t.configuracion.frecuencia;select.append(op);}f.append(select);
     const b=el('button','Confirmar nueva programación');b.type='submit';b.className='btn';f.append(b);f.onsubmit=async e=>{e.preventDefault();try{await api('/api/agentes/tareas/'+t.id,{confirmar:true,nombre:campos.nombre.value,zona:campos.zona.value,configuracion:{...t.configuracion,hora:Number(campos.hora.value),dia_semana:Number(campos.dia_semana.value),dia_mes:Number(campos.dia_mes.value),frecuencia:select.value}});await tareas();}catch(e){error(e);}};zona.append(f);
   }
-  async function auditoria(){const d=await api('/api/agentes/ejecuciones');tabla('ag-auditoria',['Fecha Perú','Agente','Módulo','Herramienta','Duración ms','Estado','Código técnico'],d.ejecuciones.map(e=>[hora(e.fecha),e.agente,e.modulo,e.herramienta,e.duracion_ms,e.estado,e.error_codigo]));}
   if($('ag-form'))$('ag-form').addEventListener('submit',async e=>{e.preventDefault();$('ag-error').hidden=true;$('ag-estado').textContent='Procesando solicitud…';const b=e.target.querySelector('button[type=submit]');b.disabled=true;try{
     if(modulo==='reportes'){
       const config={desde:$('ag-desde').value,hasta:$('ag-hasta').value,tipo:$('ag-tipo').value,secciones:[...document.querySelectorAll('[name=seccion]:checked')].map(n=>n.value)};
       const d=await api('/api/agentes/reportes',{configuracion:config,revision_groq:$('ag-revision').checked});const a=d.datos.estadisticas;
+      window.recorridosUI.resumen($('ag-recorrido'),d);
       $('ag-resultado').hidden=false;tarjetas([['Atenciones',a.total_atenciones??'No incluida'],['Pacientes distintos',a.pacientes_unicos??'No incluida'],['Período',`${d.desde} a ${d.hasta}`]]);
       chart(a.por_mes.map(x=>x.mes),a.por_mes.map(x=>x.cantidad),'Atenciones observadas');tabla('ag-tabla',['Fecha observada','Cantidad'],a.por_dia.map(x=>[x.fecha,x.cantidad]));
       conclusiones(d.datos,d.agente,d.estado,d.advertencia);$('ag-pdf').href=`/api/agentes/reportes/${d.id}/pdf`;$('ag-excel').href=`/api/agentes/reportes/${d.id}/xlsx`;
@@ -56,6 +56,7 @@
       await informes();
     } else if(modulo==='calidad'){
       const d=await api('/api/agentes/calidad',{desde:$('ag-desde').value,hasta:$('ag-hasta').value}),a=d.datos.agregado;
+      window.recorridosUI.resumen($('ag-recorrido'),d);
       $('ag-resultado').hidden=false;tarjetas([['Registros evaluados',a.total],['Sin incidencias',a.completos],['Con incidencias',a.incompletos],['Posibles duplicados',a.posibles_duplicados]]);
       chart(Object.keys(a.categorias),Object.values(a.categorias),'Incidencias');tabla('ag-tabla',['Categoría','Incidencias'],Object.entries(a.categorias));conclusiones(d.datos,d.agente,d.estado,d.advertencia);
       $('ag-alcance').textContent=a.alcance+` Atenciones sin fecha: ${a.atenciones_fecha_nula}. ${a.costos}`;
@@ -63,13 +64,14 @@
       if(d.datos.incidencias_truncadas)$('ag-alcance').textContent+=' Se muestran las primeras 200 incidencias.';
     } else {
       const d=await api('/api/agentes/tareas/preview',{solicitud:$('ag-solicitud').value});token=d.confirmacion_token;$('ag-preview').hidden=false;$('ag-confirmar').disabled=false;
+      window.recorridosUI.resumen($('ag-recorrido'),d);
       const c=d.datos.configuracion;$('ag-config').className='ag-config';$('ag-config').textContent=`Tarea: ${tipos[c.tipo]}\nProgramación: ${frecuencia(c)}\nHora: ${String(c.hora).padStart(2,'0')}:00\nZona: ${d.zona}\nPróxima ejecución: ${hora(d.proxima)}\nAcción: ${tipos[c.tipo]}\nAvisos: ${d.avisos}\n${d.advertencia||''}`;
     }
     $('ag-estado').textContent='Operación completada. Revisa los resultados y advertencias.';
   }catch(e){error(e);$('ag-estado').textContent='La operación no pudo completarse.';}finally{b.disabled=false;}});
   if(modulo==='tareas'){
     $('ag-solicitud').addEventListener('input',()=>{token=null;$('ag-preview').hidden=true;});
-    $('ag-confirmar').addEventListener('click',async()=>{if(!token)return;$('ag-confirmar').disabled=true;try{await api('/api/agentes/tareas/confirmar',{token,confirmar:true});token=null;$('ag-preview').hidden=true;$('ag-estado').textContent='Tarea confirmada. Se ejecutará automáticamente cuando el cron externo esté configurado. También puedes ejecutarla ahora.';await tareas();}catch(e){error(e);$('ag-confirmar').disabled=false;}});
+    $('ag-confirmar').addEventListener('click',async()=>{if(!token)return;$('ag-confirmar').disabled=true;try{const d=await api('/api/agentes/tareas/confirmar',{token,confirmar:true});window.recorridosUI.resumen($('ag-recorrido'),d);token=null;$('ag-preview').hidden=true;$('ag-estado').textContent='Tarea confirmada. Se ejecutará automáticamente cuando el cron externo esté configurado. También puedes ejecutarla ahora.';await tareas();}catch(e){error(e);$('ag-confirmar').disabled=false;}});
     tareas().catch(error);
   }
   if(modulo==='reportes')informes().catch(error);
@@ -80,5 +82,4 @@
     if($('ag-tipo').value==='mensual'){$('ag-desde').value=`${y}-${String(m).padStart(2,'0')}-01`;fin=new Date(y,m,0);}
     if($('ag-tipo').value!=='rango')$('ag-hasta').value=`${fin.getFullYear()}-${String(fin.getMonth()+1).padStart(2,'0')}-${String(fin.getDate()).padStart(2,'0')}`;
   });
-  if(modulo==='auditoria'){$('ag-recargar').addEventListener('click',()=>auditoria().catch(error));auditoria().catch(error);}
 })();

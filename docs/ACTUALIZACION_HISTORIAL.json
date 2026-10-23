@@ -1,0 +1,28 @@
+{
+  "configuracion_conservada": true,
+  "tablas_conservadas": [
+    "agente_ejecuciones",
+    "agente_informes",
+    "agente_tareas",
+    "agente_tarea_ejecuciones",
+    "cuenta_perfil",
+    "cuenta_tareas",
+    "cuenta_notificaciones",
+    "cuenta_archivos",
+    "cuenta_programador"
+  ],
+  "relaciones": [],
+  "integridad": "ok",
+  "identificadores_invalidos": 0,
+  "registros": {
+    "pacientes": 1000,
+    "atenciones": 9569,
+    "ml_demanda_diaria": 726,
+    "ml_pronosticos_v2": 60
+  },
+  "tablas_separadas": [],
+  "modelos_activos": "v2-b8f4e2526f4a47b9",
+  "cantidad_modelos": 10,
+  "pruebas": 86,
+  "supabase_modificado": false
+}

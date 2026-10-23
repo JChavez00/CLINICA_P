@@ -10,6 +10,7 @@
       const contenedor=agregar(data.respuesta||'No se recibió respuesta.','bot');
       const origen=document.createElement('small');origen.className='ia-origen';origen.textContent=`Atendió: ${data.agente||'coordinador'} · ${data.estado||'local'}`;contenedor.appendChild(origen);
       if(data.advertencia){const aviso=document.createElement('p');aviso.textContent=data.advertencia;contenedor.appendChild(aviso);}
+      if(data.ejecucion_id){const recorrido=document.createElement('div');contenedor.appendChild(recorrido);window.recorridosUI.resumen(recorrido,data);}
       (data.opciones||[]).forEach(p=>{const b=document.createElement('button');b.type='button';b.className='btn';b.textContent=p.nombre;b.addEventListener('click',()=>preguntar('',p.id));contenedor.appendChild(b);});
       const d=data.datos||{},a=d.actual||d;
       if(a.total_atenciones!=null){const p=document.createElement('p');p.textContent=`${a.desde} a ${a.hasta}: ${a.total_atenciones} atenciones. `+(d.anterior?`Período anterior: ${d.anterior.total_atenciones}. Diferencia: ${d.diferencia}.`:'');contenedor.appendChild(p);}

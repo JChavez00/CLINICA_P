@@ -33,7 +33,7 @@ def medir(objetivo, real, predicho):
             "r2": float(r2_score(real, predicho)) if len(real) > 1 and np.var(real) > 0 else None}
 
 
-def entrenar(df=None, auditoria=None):
+def entrenar(df=None, auditoria=None, *, calendario_config=None, procedencia=None):
     if df is None:
         df, auditoria = cargar_datos()
     if len(df) < 60:
@@ -51,7 +51,7 @@ def entrenar(df=None, auditoria=None):
             "caracteristicas": CARACTERISTICAS, "etiquetas": ETIQUETAS,
             "periodo": {"desde": df.fecha.iloc[0].isoformat(), "hasta": df.fecha.iloc[-1].isoformat()},
             "registros": len(df), "atenciones": int(df.total_atenciones.sum()),
-            "auditoria": auditoria or {}, "calendario": calendario(),
+            "auditoria": auditoria or {}, "calendario": calendario_config if calendario_config is not None else calendario(),
             "metodo": "80/20 cronológico; 3 ventanas expansivas dentro del 80 %. Selección por validación. Prueba final sólo ganadores y referencias. Sin ajuste de hiperparámetros.",
             "corte": {"fin_entrenamiento": train.fecha.iloc[-1].isoformat(), "inicio_prueba": test.fecha.iloc[0].isoformat(), "dias_prueba": len(test)},
             "ventanas": [{"fin_entrenamiento": train.iloc[a[-1]].fecha.isoformat(),
@@ -108,6 +108,11 @@ def entrenar(df=None, auditoria=None):
         "Mejora orientativa: >0.02 F1 o reducción de MAE >5 % en validación y prueba; no es significación estadística.",
         "Feriados futuros manuales; fechas no configuradas se suponen no feriadas.",
         "Clasificación y cantidad independientes: pueden discrepar; no se inventan umbrales."]
+    if procedencia is not None:
+        meta["procedencia"]=procedencia
+        meta["limitaciones"][0]="Escenario sintético documentado; los resultados no acreditan rendimiento sobre atenciones reales."
+        if calendario_config is not None:
+            meta["limitaciones"][5]=calendario_config.get("limitacion","Calendario del escenario; comprobar cobertura antes de inferir.")
     return publicar({"schema": 2, "version": version, "modelos": modelos}, meta)
 
 

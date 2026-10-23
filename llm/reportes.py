@@ -19,7 +19,10 @@ def guardar(resultado,identificador=None):
     informe=InformeIA(id=identificador,desde=date.fromisoformat(datos["periodo"]["desde"]),
                      hasta=date.fromisoformat(datos["periodo"]["hasta"]),
                      contenido={"datos":datos,"estado":resultado["estado"],"agente":resultado["agente"],
-                                "advertencia":resultado.get("advertencia")})
+                                "advertencia":resultado.get("advertencia"),
+                                "ejecucion_id":resultado.get("ejecucion_id"),
+                                "herramienta":resultado.get("herramienta"),
+                                "duracion_ms":resultado.get("duracion_ms")})
     db.session.add(informe); db.session.commit()
     from .almacenamiento import conservar
     conservar(informe)

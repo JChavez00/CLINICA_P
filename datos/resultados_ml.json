@@ -1,0 +1,206 @@
+{
+  "resumen": {
+    "schema": 1,
+    "tipo": "sintetico",
+    "semilla": 20261023,
+    "desde": "2024-10-23",
+    "hasta": "2026-10-22",
+    "pacientes": 1000,
+    "atenciones": 9569,
+    "dias_con_informacion": 726,
+    "dias_sin_informacion": 4,
+    "dias_cero_explicito": 8,
+    "promedio_diario": 13.18,
+    "maximo_diario": 24,
+    "clases": {
+      "MEDIA": 363,
+      "BAJA": 190,
+      "ALTA": 173
+    },
+    "prefijos": {
+      "45": 121,
+      "73": 121,
+      "62": 117,
+      "40": 126,
+      "70": 122,
+      "48": 121,
+      "60": 132,
+      "71": 140
+    },
+    "pacientes_con_atencion": 1000,
+    "pacientes_con_varias_atenciones": 999,
+    "por_dia_semana": [
+      {
+        "dia": 0,
+        "dias_observados": 103,
+        "atenciones": 1635
+      },
+      {
+        "dia": 1,
+        "dias_observados": 104,
+        "atenciones": 1694
+      },
+      {
+        "dia": 2,
+        "dias_observados": 104,
+        "atenciones": 1494
+      },
+      {
+        "dia": 3,
+        "dias_observados": 105,
+        "atenciones": 1421
+      },
+      {
+        "dia": 4,
+        "dias_observados": 103,
+        "atenciones": 1639
+      },
+      {
+        "dia": 5,
+        "dias_observados": 103,
+        "atenciones": 976
+      },
+      {
+        "dia": 6,
+        "dias_observados": 104,
+        "atenciones": 710
+      }
+    ],
+    "por_mes": {
+      "2024-10": 124,
+      "2024-11": 341,
+      "2024-12": 359,
+      "2025-01": 355,
+      "2025-02": 296,
+      "2025-03": 403,
+      "2025-04": 407,
+      "2025-05": 452,
+      "2025-06": 442,
+      "2025-07": 457,
+      "2025-08": 420,
+      "2025-09": 462,
+      "2025-10": 399,
+      "2025-11": 314,
+      "2025-12": 355,
+      "2026-01": 330,
+      "2026-02": 312,
+      "2026-03": 373,
+      "2026-04": 432,
+      "2026-05": 461,
+      "2026-06": 465,
+      "2026-07": 489,
+      "2026-08": 399,
+      "2026-09": 429,
+      "2026-10": 293
+    },
+    "integridad": "ok",
+    "discrepancias_diarias": 0,
+    "costos": "No aplicable: no existe el campo.",
+    "regla_etiquetas": {
+      "BAJA": "0–9",
+      "MEDIA": "10–17",
+      "ALTA": "18–24"
+    },
+    "capacidad_diaria": 24
+  },
+  "version": "v2-b8f4e2526f4a47b9",
+  "comparacion": {
+    "anterior": {
+      "clasificacion": {
+        "prueba": {
+          "accuracy": 0.38181818181818183,
+          "precision_macro": 0.28308823529411764,
+          "recall_macro": 0.30050505050505055,
+          "f1_macro": 0.2837265577737447
+        },
+        "referencia": {
+          "accuracy": 0.43636363636363634,
+          "precision_macro": 0.14545454545454545,
+          "recall_macro": 0.3333333333333333,
+          "f1_macro": 0.20253164556962025
+        }
+      },
+      "regresion": {
+        "prueba": {
+          "mae": 1.6930483878144797,
+          "rmse": 1.9922617820617066,
+          "r2": -0.11834470007429698
+        },
+        "referencia": {
+          "mae": 1.6682235195996666,
+          "rmse": 1.8855545535255958,
+          "r2": -0.001753988666295836
+        }
+      }
+    },
+    "nuevo": {
+      "clasificacion": {
+        "prueba": {
+          "accuracy": 0.5205479452054794,
+          "precision_macro": 0.597945951836112,
+          "recall_macro": 0.6145519254333429,
+          "f1_macro": 0.529897009308774
+        },
+        "referencia": {
+          "accuracy": 0.4863013698630137,
+          "precision_macro": 0.16210045662100456,
+          "recall_macro": 0.3333333333333333,
+          "f1_macro": 0.21812596006144394
+        }
+      },
+      "regresion": {
+        "prueba": {
+          "mae": 3.3922088860786306,
+          "rmse": 4.276972441093424,
+          "r2": 0.4030694637582577
+        },
+        "referencia": {
+          "mae": 4.805621162021728,
+          "rmse": 5.75765395419386,
+          "r2": -0.08178763001180522
+        }
+      }
+    },
+    "referencias_temporales_prueba": {
+      "Media por día semanal": {
+        "regresion": {
+          "mae": 3.5219833321161116,
+          "rmse": 4.430604598254809,
+          "r2": 0.35941483027262133
+        },
+        "clasificacion": {
+          "accuracy": 0.5342465753424658,
+          "precision_macro": 0.39288888888888884,
+          "recall_macro": 0.45100711797667725,
+          "f1_macro": 0.39717425431711145
+        }
+      },
+      "Mismo día semana anterior recursivo": {
+        "regresion": {
+          "mae": 4.602739726027397,
+          "rmse": 5.889391437733556,
+          "r2": -0.13185744925468446
+        },
+        "clasificacion": {
+          "accuracy": 0.5136986301369864,
+          "precision_macro": 0.557372346528973,
+          "recall_macro": 0.5463976429446671,
+          "f1_macro": 0.5146554604432104
+        }
+      }
+    },
+    "alta_prueba": {
+      "casos": 44,
+      "detectados": 39,
+      "precision": 0.42391304347826086,
+      "recall": 0.8863636363636364,
+      "f1": 0.5735294117647058
+    },
+    "advertencia": "Datasets, tamaños y umbrales diferentes: no es una comparación causal ni prueba de mejora sobre datos reales. No se ajustaron semillas o patrones según el resultado de prueba."
+  },
+  "emisiones": {
+    "dias_solicitados": 30,
+    "resultados_procesados": 60,
+    "nota": "Repetir el mismo día/versión conserva la emisión existente. Otro día conserva una nueva emisión."
+  }
+}

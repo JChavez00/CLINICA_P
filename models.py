@@ -162,6 +162,17 @@ class AgenteEjecucion(db.Model):
     error_codigo = db.Column(db.String(50))
 
 
+class AgenteRecorrido(db.Model):
+    """Pasos técnicos medidos; nunca conserva consultas ni resultados clínicos."""
+    __tablename__ = "agente_recorridos"
+    ejecucion_id = db.Column(db.String(36), db.ForeignKey("agente_ejecuciones.id"), primary_key=True)
+    flujo_id = db.Column(db.String(36), nullable=False, index=True)
+    padre_id = db.Column(db.String(36))
+    proveedor = db.Column(db.String(30), nullable=False)
+    modelo = db.Column(db.String(120), nullable=False)
+    pasos = db.Column(db.JSON, nullable=False)
+
+
 class InformeIA(db.Model):
     __tablename__ = "agente_informes"
     id = db.Column(db.String(36), primary_key=True)

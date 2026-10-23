@@ -1,0 +1,246 @@
+{
+  "schema": 1,
+  "tipo": "sintetico",
+  "semilla": 20261023,
+  "generador": "numpy.default_rng PCG64",
+  "desde": "2024-10-23",
+  "hasta": "2026-10-22",
+  "meses": 24,
+  "pacientes": 1000,
+  "capacidad_diaria": 24,
+  "regla_etiquetas": {
+    "BAJA": "0–9",
+    "MEDIA": "10–17",
+    "ALTA": "18–24"
+  },
+  "umbral_fijado_antes_de_entrenar": true,
+  "regla_fuente": "Supuesto operativo: 24 turnos de 20 minutos entre 08:00 y 16:00; no es horario real del policlínico.",
+  "medias_por_dia_semana": [
+    16,
+    17,
+    15,
+    14,
+    16,
+    10,
+    7
+  ],
+  "amplitud_estacional": 1.8,
+  "ruido": "Poisson; AR(1) 0.45 con innovación normal sigma 1.5",
+  "sin_informacion": [
+    "2025-01-11",
+    "2025-02-21",
+    "2025-03-10",
+    "2026-09-09"
+  ],
+  "eventos": [
+    {
+      "fecha": "2024-11-02",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2024-11-11",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2024-11-28",
+      "tipo": "cierre_excepcional_simulado"
+    },
+    {
+      "fecha": "2024-12-04",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2024-12-10",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2024-12-13",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2025-02-26",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2025-03-07",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2025-04-20",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2025-05-15",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2025-05-28",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2025-06-25",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2025-06-26",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2025-08-04",
+      "tipo": "cierre_excepcional_simulado"
+    },
+    {
+      "fecha": "2025-08-07",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2025-09-18",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2025-10-23",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2025-11-08",
+      "tipo": "cierre_excepcional_simulado"
+    },
+    {
+      "fecha": "2025-12-04",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2026-01-09",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2026-01-29",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2026-02-04",
+      "tipo": "cierre_excepcional_simulado"
+    },
+    {
+      "fecha": "2026-02-20",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2026-02-24",
+      "tipo": "cierre_excepcional_simulado"
+    },
+    {
+      "fecha": "2026-03-04",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2026-03-27",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2026-04-01",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2026-05-20",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2026-06-10",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2026-06-27",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2026-07-05",
+      "tipo": "aumento_excepcional_simulado"
+    },
+    {
+      "fecha": "2026-07-22",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2026-08-08",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2026-08-11",
+      "tipo": "reduccion_excepcional_simulada"
+    },
+    {
+      "fecha": "2026-08-16",
+      "tipo": "cierre_excepcional_simulado"
+    },
+    {
+      "fecha": "2026-09-12",
+      "tipo": "cierre_excepcional_simulado"
+    }
+  ],
+  "calendario": {
+    "fuente": "Calendario nacional gob.pe/feriados; fechas fijas y Jueves/Viernes Santo gregorianos.",
+    "limitacion": "No incluye días compensables ni feriados regionales. Supuesto de actividad reducida, no cierre obligatorio.",
+    "fechas": {
+      "2024-11-01": true,
+      "2024-12-08": true,
+      "2024-12-09": true,
+      "2024-12-25": true,
+      "2025-01-01": true,
+      "2025-05-01": true,
+      "2025-06-07": true,
+      "2025-06-29": true,
+      "2025-07-23": true,
+      "2025-07-28": true,
+      "2025-07-29": true,
+      "2025-08-06": true,
+      "2025-08-30": true,
+      "2025-10-08": true,
+      "2025-11-01": true,
+      "2025-12-08": true,
+      "2025-12-09": true,
+      "2025-12-25": true,
+      "2025-04-17": true,
+      "2025-04-18": true,
+      "2026-01-01": true,
+      "2026-05-01": true,
+      "2026-06-07": true,
+      "2026-06-29": true,
+      "2026-07-23": true,
+      "2026-07-28": true,
+      "2026-07-29": true,
+      "2026-08-06": true,
+      "2026-08-30": true,
+      "2026-10-08": true,
+      "2026-11-01": true,
+      "2026-12-08": true,
+      "2026-12-09": true,
+      "2026-12-25": true,
+      "2026-04-02": true,
+      "2026-04-03": true,
+      "2027-01-01": true,
+      "2027-05-01": true,
+      "2027-06-07": true,
+      "2027-06-29": true,
+      "2027-07-23": true,
+      "2027-07-28": true,
+      "2027-07-29": true,
+      "2027-08-06": true,
+      "2027-08-30": true,
+      "2027-10-08": true,
+      "2027-11-01": true,
+      "2027-03-25": true,
+      "2027-03-26": true
+    }
+  },
+  "campos_no_disponibles": [
+    "servicio",
+    "profesional_responsable",
+    "costo"
+  ],
+  "fuentes": [
+    "https://www.gob.pe/feriados",
+    "https://www.proviasdes.gob.pe/planes/pasco/pvpp/PVPP_Daniel_A_Carrion.pdf"
+  ],
+  "limitacion": "Escenario académico con supuestos y ruido. No representa personas ni atenciones reales; no acredita validez externa."
+}

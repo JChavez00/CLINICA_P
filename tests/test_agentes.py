@@ -59,6 +59,78 @@ class AgentesTests(unittest.TestCase):
         self.mock.stop();db.session.remove();self.ctx.pop()
     def post(self,url,datos): return self.c.post(url,json=datos,headers=self.headers)
 
+    def test_recorrido_medido_sin_datos_privados(self):
+        respuesta=self.post('/api/asistente-ia',{'pregunta':'Busca DNI 12345678'})
+        id=respuesta.json['ejecucion_id']
+        r=self.c.get('/api/agentes/ejecuciones/'+id)
+        self.assertEqual(r.status_code,200)
+        datos=r.json
+        self.assertEqual([p['codigo'] for p in datos['pasos']],['coordinacion','contrato','plan','herramienta','respuesta'])
+        self.assertEqual(len(datos['participantes']),1)
+        self.assertEqual(datos['duracion_ms'],respuesta.json['duracion_ms'])
+        self.assertGreaterEqual(datos['duracion_ms'],datos['pasos'][-1]['fin_ms'])
+        anterior=0
+        for p in datos['pasos']:
+            self.assertEqual(p['inicio_ms'],anterior)
+            self.assertEqual(p['duracion_ms'],p['fin_ms']-p['inicio_ms'])
+            self.assertGreaterEqual(p['duracion_ms'],0)
+            anterior=p['fin_ms']
+        exportacion=self.c.get('/api/agentes/ejecuciones/'+id+'?descargar=1')
+        self.assertIn('attachment',exportacion.headers['Content-Disposition'])
+        for privado in ('12345678','ALICIA','PÉREZ','CLINICO SECRETO','DIAGNOSTICO PRIVADO','999888777','DOMICILIO PRIVADO'):
+            self.assertNotIn(privado,exportacion.get_data(as_text=True))
+
+    def test_recorrido_reporte_revision_enlazada(self):
+        r=self.post('/api/agentes/reportes',{'configuracion':{'tipo':'rango','desde':'2026-09-01','hasta':'2026-09-03','secciones':['atenciones']},'revision_groq':True})
+        self.assertEqual(r.status_code,201)
+        id=r.json['ejecucion_id']
+        detalle=self.c.get('/api/agentes/ejecuciones/'+id).json
+        self.assertEqual(len(detalle['participantes']),2)
+        hijo=next(e for e in detalle['participantes'] if e['padre_id'])
+        self.assertEqual(hijo['padre_id'],id)
+        self.assertEqual(hijo['agente'],'analista_inteligente')
+        otra=self.post('/api/asistente-ia',{'pregunta':'Cuantas atenciones hubo en septiembre'})
+        detalle_otra=self.c.get('/api/agentes/ejecuciones/'+otra.json['ejecucion_id']).json
+        self.assertEqual(len(detalle_otra['participantes']),1)
+
+    def test_recorrido_degradado_y_error_controlado(self):
+        with patch('llm.clientes.solicitar',side_effect=ErrorAgente('proveedor_no_disponible')):
+            r=self.post('/api/asistente-ia',{'pregunta':'Cuantas atenciones hubo en septiembre'})
+        d=self.c.get('/api/agentes/ejecuciones/'+r.json['ejecucion_id']).json
+        self.assertEqual(d['estado'],'degradado')
+        self.assertEqual(next(p for p in d['pasos'] if p['codigo']=='plan')['estado'],'degradado')
+        self.assertIn('herramienta',[p['codigo'] for p in d['pasos']])
+        self.app.config['AGENTES_PERMISOS']=[]
+        self.post('/api/asistente-ia',{'pregunta':'Busca DNI 12345678'})
+        from models import AgenteRecorrido
+        error=AgenteEjecucion.query.filter_by(estado='error').first()
+        pasos=db.session.get(AgenteRecorrido,error.id).pasos
+        self.assertEqual([p['codigo'] for p in pasos],['coordinacion','error'])
+
+    def test_recorrido_historico_no_inventa_etapas_y_acceso(self):
+        from llm.auditoria import registrar
+        id=registrar('analista_inteligente','chat','estadisticas_periodo',.1,'ok')
+        r=self.c.get('/api/agentes/ejecuciones/'+id)
+        self.assertFalse(r.json['detalle_disponible'])
+        self.assertEqual(r.json['pasos'],[])
+        self.assertEqual(self.c.get('/api/agentes/ejecuciones/'+str(uuid4())).status_code,404)
+        self.app.config['AGENTES_PERMISOS']=[]
+        self.assertEqual(self.c.get('/api/agentes/ejecuciones/'+id).status_code,403)
+        with self.c.session_transaction() as s:s.clear()
+        self.assertEqual(self.c.get('/api/agentes/ejecuciones/'+id).status_code,401)
+
+    def test_confirmacion_humana_enlazada_al_borrador(self):
+        r=self.post('/api/agentes/tareas/preview',{'solicitud':'Genera un reporte todos los lunes a las 08:00'})
+        self.assertEqual(r.status_code,200)
+        borrador=r.json['ejecucion_id']
+        r=self.post('/api/agentes/tareas/confirmar',{'token':r.json['confirmacion_token'],'confirmar':True})
+        self.assertEqual(r.status_code,201)
+        detalle=self.c.get('/api/agentes/ejecuciones/'+r.json['ejecucion_id']).json
+        self.assertEqual(detalle['padre_id'],borrador)
+        self.assertEqual(detalle['proveedor'],'local')
+        self.assertEqual([p['codigo'] for p in detalle['pasos']],['confirmacion','programacion'])
+        self.assertEqual(len(detalle['participantes']),2)
+
     def test_seleccion_agente(self):
         self.assertEqual(clasificar_chat('Busca DNI 12345678')['agente'],'consultor')
         self.assertEqual(clasificar_chat('Cuantas atenciones hubo en septiembre')['agente'],'analista')

@@ -1,0 +1,1469 @@
+{
+  "schema": 2,
+  "version": "v2-b8f4e2526f4a47b9",
+  "sklearn": "1.9.1",
+  "fecha_entrenamiento": "2026-10-23T18:13:58.275156+00:00",
+  "caracteristicas": [
+    "dia_semana",
+    "mes",
+    "es_feriado",
+    "fin_semana",
+    "dia_mes"
+  ],
+  "etiquetas": [
+    "BAJA",
+    "MEDIA",
+    "ALTA"
+  ],
+  "periodo": {
+    "desde": "2024-10-23",
+    "hasta": "2026-10-22"
+  },
+  "registros": 726,
+  "atenciones": 9569,
+  "auditoria": {
+    "dias_faltantes": 4,
+    "dias_cero_explicitos": 8,
+    "discrepancias_con_atenciones": 0,
+    "rangos_observados_por_etiqueta": {
+      "ALTA": {
+        "min": 18,
+        "max": 24
+      },
+      "BAJA": {
+        "min": 0,
+        "max": 9
+      },
+      "MEDIA": {
+        "min": 10,
+        "max": 17
+      }
+    },
+    "regla_etiquetas": "Supuesto operativo previo: BAJA 0–9, MEDIA 10–17, ALTA 18–24; capacidad 24 turnos/día.",
+    "ausencias": "Días sin registro son desconocidos, nunca ceros imputados."
+  },
+  "calendario": {
+    "fuente": "Calendario nacional gob.pe/feriados; fechas fijas y Jueves/Viernes Santo gregorianos.",
+    "limitacion": "No incluye días compensables ni feriados regionales. Supuesto de actividad reducida, no cierre obligatorio.",
+    "fechas": {
+      "2024-11-01": true,
+      "2024-12-08": true,
+      "2024-12-09": true,
+      "2024-12-25": true,
+      "2025-01-01": true,
+      "2025-05-01": true,
+      "2025-06-07": true,
+      "2025-06-29": true,
+      "2025-07-23": true,
+      "2025-07-28": true,
+      "2025-07-29": true,
+      "2025-08-06": true,
+      "2025-08-30": true,
+      "2025-10-08": true,
+      "2025-11-01": true,
+      "2025-12-08": true,
+      "2025-12-09": true,
+      "2025-12-25": true,
+      "2025-04-17": true,
+      "2025-04-18": true,
+      "2026-01-01": true,
+      "2026-05-01": true,
+      "2026-06-07": true,
+      "2026-06-29": true,
+      "2026-07-23": true,
+      "2026-07-28": true,
+      "2026-07-29": true,
+      "2026-08-06": true,
+      "2026-08-30": true,
+      "2026-10-08": true,
+      "2026-11-01": true,
+      "2026-12-08": true,
+      "2026-12-09": true,
+      "2026-12-25": true,
+      "2026-04-02": true,
+      "2026-04-03": true,
+      "2027-01-01": true,
+      "2027-05-01": true,
+      "2027-06-07": true,
+      "2027-06-29": true,
+      "2027-07-23": true,
+      "2027-07-28": true,
+      "2027-07-29": true,
+      "2027-08-06": true,
+      "2027-08-30": true,
+      "2027-10-08": true,
+      "2027-11-01": true,
+      "2027-03-25": true,
+      "2027-03-26": true
+    }
+  },
+  "metodo": "80/20 cronológico; 3 ventanas expansivas dentro del 80 %. Selección por validación. Prueba final sólo ganadores y referencias. Sin ajuste de hiperparámetros.",
+  "corte": {
+    "fin_entrenamiento": "2026-05-28",
+    "inicio_prueba": "2026-05-29",
+    "dias_prueba": 146
+  },
+  "ventanas": [
+    {
+      "fin_entrenamiento": "2025-03-19",
+      "inicio_validacion": "2025-03-20",
+      "fin_validacion": "2025-08-11"
+    },
+    {
+      "fin_entrenamiento": "2025-08-11",
+      "inicio_validacion": "2025-08-12",
+      "fin_validacion": "2026-01-03"
+    },
+    {
+      "fin_entrenamiento": "2026-01-03",
+      "inicio_validacion": "2026-01-04",
+      "fin_validacion": "2026-05-28"
+    }
+  ],
+  "resultados": {
+    "clasificacion": {
+      "ganador": "Random Forest",
+      "validacion": {
+        "Random Forest": {
+          "accuracy": 0.5126436781609195,
+          "precision_macro": 0.5339352081254254,
+          "recall_macro": 0.5672514619883041,
+          "f1_macro": 0.5257044939114812,
+          "ventanas": [
+            {
+              "accuracy": 0.4896551724137931,
+              "precision_macro": 0.4963913392141139,
+              "recall_macro": 0.5494002134011619,
+              "f1_macro": 0.5018367583884825
+            },
+            {
+              "accuracy": 0.5448275862068965,
+              "precision_macro": 0.5909320367713481,
+              "recall_macro": 0.6284663271080928,
+              "f1_macro": 0.5593989929432968
+            },
+            {
+              "accuracy": 0.503448275862069,
+              "precision_macro": 0.5253045404208195,
+              "recall_macro": 0.535042735042735,
+              "f1_macro": 0.5130559476596984
+            }
+          ]
+        },
+        "Decision Tree": {
+          "accuracy": 0.4367816091954023,
+          "precision_macro": 0.4577372255045211,
+          "recall_macro": 0.5134994807892004,
+          "f1_macro": 0.4465483988866397,
+          "ventanas": [
+            {
+              "accuracy": 0.38620689655172413,
+              "precision_macro": 0.3997289972899729,
+              "recall_macro": 0.45542107210731847,
+              "f1_macro": 0.3957184421828753
+            },
+            {
+              "accuracy": 0.496551724137931,
+              "precision_macro": 0.5480564036902065,
+              "recall_macro": 0.6172891907187323,
+              "f1_macro": 0.501605086479036
+            },
+            {
+              "accuracy": 0.42758620689655175,
+              "precision_macro": 0.43623959453828337,
+              "recall_macro": 0.461050061050061,
+              "f1_macro": 0.4266898248661167
+            }
+          ]
+        },
+        "Gradient Boosting": {
+          "accuracy": 0.542528735632184,
+          "precision_macro": 0.5357269772761047,
+          "recall_macro": 0.49923484724271733,
+          "f1_macro": 0.5092774989183829,
+          "ventanas": [
+            {
+              "accuracy": 0.46206896551724136,
+              "precision_macro": 0.4516147925033467,
+              "recall_macro": 0.4362544862744253,
+              "f1_macro": 0.4399617075673414
+            },
+            {
+              "accuracy": 0.6,
+              "precision_macro": 0.5715146040349293,
+              "recall_macro": 0.5592812676853424,
+              "f1_macro": 0.564366636387588
+            },
+            {
+              "accuracy": 0.5655172413793104,
+              "precision_macro": 0.5925087983911513,
+              "recall_macro": 0.5014245014245015,
+              "f1_macro": 0.5078932060040265
+            }
+          ]
+        },
+        "KNN": {
+          "accuracy": 0.542528735632184,
+          "precision_macro": 0.5217791186206128,
+          "recall_macro": 0.514838498114445,
+          "f1_macro": 0.5156811876405866,
+          "ventanas": [
+            {
+              "accuracy": 0.5103448275862069,
+              "precision_macro": 0.4911826981246219,
+              "recall_macro": 0.4929638690995837,
+              "f1_macro": 0.48535148249677035
+            },
+            {
+              "accuracy": 0.5862068965517241,
+              "precision_macro": 0.5440005636581413,
+              "recall_macro": 0.5377758913412564,
+              "f1_macro": 0.5388763503957148
+            },
+            {
+              "accuracy": 0.5310344827586206,
+              "precision_macro": 0.5256503327283727,
+              "recall_macro": 0.5068783068783068,
+              "f1_macro": 0.5133187317480185
+            }
+          ]
+        },
+        "Logistic Regression": {
+          "accuracy": 0.45977011494252873,
+          "precision_macro": 0.5093794574281325,
+          "recall_macro": 0.5545991146089523,
+          "f1_macro": 0.46625094821735136,
+          "ventanas": [
+            {
+              "accuracy": 0.5103448275862069,
+              "precision_macro": 0.5123636233132357,
+              "recall_macro": 0.5630988435381482,
+              "f1_macro": 0.5223971252679386
+            },
+            {
+              "accuracy": 0.4206896551724138,
+              "precision_macro": 0.4906052393857272,
+              "recall_macro": 0.5558856819468024,
+              "f1_macro": 0.43138946038830966
+            },
+            {
+              "accuracy": 0.4482758620689655,
+              "precision_macro": 0.3470597059705971,
+              "recall_macro": 0.5534391534391534,
+              "f1_macro": 0.398876404494382
+            }
+          ]
+        },
+        "Referencia": {
+          "accuracy": 0.49195402298850577,
+          "precision_macro": 0.16398467432950192,
+          "recall_macro": 0.3333333333333333,
+          "f1_macro": 0.21982537236774524,
+          "ventanas": [
+            {
+              "accuracy": 0.503448275862069,
+              "precision_macro": 0.167816091954023,
+              "recall_macro": 0.3333333333333333,
+              "f1_macro": 0.22324159021406728
+            },
+            {
+              "accuracy": 0.5241379310344828,
+              "precision_macro": 0.17471264367816094,
+              "recall_macro": 0.3333333333333333,
+              "f1_macro": 0.22926093514328807
+            },
+            {
+              "accuracy": 0.4482758620689655,
+              "precision_macro": 0.14942528735632185,
+              "recall_macro": 0.3333333333333333,
+              "f1_macro": 0.20634920634920637
+            }
+          ]
+        }
+      },
+      "prueba": {
+        "accuracy": 0.5205479452054794,
+        "precision_macro": 0.597945951836112,
+        "recall_macro": 0.6145519254333429,
+        "f1_macro": 0.529897009308774
+      },
+      "referencia_prueba": {
+        "accuracy": 0.4863013698630137,
+        "precision_macro": 0.16210045662100456,
+        "recall_macro": 0.3333333333333333,
+        "f1_macro": 0.21812596006144394
+      },
+      "mejora_demostrada": true,
+      "experimental": true,
+      "importancia": {
+        "dia_semana": 0.38238740553793243,
+        "mes": 0.1838760697185408,
+        "es_feriado": 0.01684705601702798,
+        "fin_semana": 0.2709379839702764,
+        "dia_mes": 0.14595148475622235
+      },
+      "matriz_confusion": [
+        [
+          24,
+          2,
+          5
+        ],
+        [
+          10,
+          13,
+          48
+        ],
+        [
+          1,
+          4,
+          39
+        ]
+      ],
+      "reporte_clases": {
+        "BAJA": {
+          "precision": 0.6857142857142857,
+          "recall": 0.7741935483870968,
+          "f1-score": 0.7272727272727273,
+          "support": 31.0
+        },
+        "MEDIA": {
+          "precision": 0.6842105263157895,
+          "recall": 0.18309859154929578,
+          "f1-score": 0.28888888888888886,
+          "support": 71.0
+        },
+        "ALTA": {
+          "precision": 0.42391304347826086,
+          "recall": 0.8863636363636364,
+          "f1-score": 0.5735294117647058,
+          "support": 44.0
+        },
+        "accuracy": 0.5205479452054794,
+        "macro avg": {
+          "precision": 0.597945951836112,
+          "recall": 0.6145519254333429,
+          "f1-score": 0.529897009308774,
+          "support": 146.0
+        },
+        "weighted avg": {
+          "precision": 0.6060840009493655,
+          "recall": 0.5205479452054794,
+          "f1-score": 0.4677524642069364,
+          "support": 146.0
+        }
+      }
+    },
+    "regresion": {
+      "ganador": "Gradient Boosting",
+      "validacion": {
+        "Random Forest": {
+          "mae": 3.635274357802606,
+          "rmse": 4.630977318968416,
+          "r2": 0.2953769675253364,
+          "ventanas": [
+            {
+              "mae": 3.921852779786545,
+              "rmse": 5.024546706671464,
+              "r2": 0.061241234930526245
+            },
+            {
+              "mae": 3.3375227709049238,
+              "rmse": 4.214534343707626,
+              "r2": 0.42240466231731155
+            },
+            {
+              "mae": 3.646447522716348,
+              "rmse": 4.618385372030531,
+              "r2": 0.3359566357747672
+            }
+          ]
+        },
+        "Decision Tree": {
+          "mae": 3.989657622932356,
+          "rmse": 5.093739629374704,
+          "r2": 0.1475184058050384,
+          "ventanas": [
+            {
+              "mae": 4.499794033170874,
+              "rmse": 5.669636041928365,
+              "r2": -0.1952825818547328
+            },
+            {
+              "mae": 3.5760973750991902,
+              "rmse": 4.621427550920201,
+              "r2": 0.30549275154246114
+            },
+            {
+              "mae": 3.893081460527004,
+              "rmse": 4.933171878137796,
+              "r2": 0.24235005244245444
+            }
+          ]
+        },
+        "Gradient Boosting": {
+          "mae": 3.5229109561332184,
+          "rmse": 4.496528685245916,
+          "r2": 0.3356969233643192,
+          "ventanas": [
+            {
+              "mae": 3.8863286090715032,
+              "rmse": 4.979176533607208,
+              "r2": 0.0781181215877248
+            },
+            {
+              "mae": 3.200060668148102,
+              "rmse": 4.1208164330273185,
+              "r2": 0.4478068408220447
+            },
+            {
+              "mae": 3.4823435911800518,
+              "rmse": 4.345455514003728,
+              "r2": 0.4121226608702957
+            }
+          ]
+        },
+        "KNN": {
+          "mae": 3.842298850574713,
+          "rmse": 4.906566090923234,
+          "r2": 0.20901757585691505,
+          "ventanas": [
+            {
+              "mae": 4.20551724137931,
+              "rmse": 5.329915571563962,
+              "r2": -0.0563331010600856
+            },
+            {
+              "mae": 3.4441379310344824,
+              "rmse": 4.446245995025001,
+              "r2": 0.357147320296212
+            },
+            {
+              "mae": 3.877241379310345,
+              "rmse": 4.903679125464597,
+              "r2": 0.2513821268227965
+            }
+          ]
+        },
+        "Ridge": {
+          "mae": 3.85606486926436,
+          "rmse": 4.764804432716748,
+          "r2": 0.2540637938122854,
+          "ventanas": [
+            {
+              "mae": 4.1448880435509965,
+              "rmse": 5.167056442724132,
+              "r2": 0.007234581120618033
+            },
+            {
+              "mae": 3.621394525682192,
+              "rmse": 4.383870093188443,
+              "r2": 0.37505782134817
+            },
+            {
+              "mae": 3.8019120385598915,
+              "rmse": 4.710975967871466,
+              "r2": 0.3090639054761498
+            }
+          ]
+        },
+        "Referencia": {
+          "mae": 4.610199497952173,
+          "rmse": 5.651161241377867,
+          "r2": -0.04926920060155848,
+          "ventanas": [
+            {
+              "mae": 4.6289655172413795,
+              "rmse": 5.725924108521848,
+              "r2": -0.21913389196817956
+            },
+            {
+              "mae": 4.4782401902497035,
+              "rmse": 5.557495393925912,
+              "r2": -0.004344504179014219
+            },
+            {
+              "mae": 4.723392786365438,
+              "rmse": 5.668766018993452,
+              "r2": -0.0004448814285695768
+            }
+          ]
+        }
+      },
+      "prueba": {
+        "mae": 3.3922088860786306,
+        "rmse": 4.276972441093424,
+        "r2": 0.4030694637582577
+      },
+      "referencia_prueba": {
+        "mae": 4.805621162021728,
+        "rmse": 5.75765395419386,
+        "r2": -0.08178763001180522
+      },
+      "mejora_demostrada": true,
+      "experimental": true,
+      "importancia": {
+        "dia_semana": 0.5126516698389159,
+        "mes": 0.1825301109602121,
+        "es_feriado": 0.02963217745099348,
+        "fin_semana": 0.2045089565572051,
+        "dia_mes": 0.07067708519267343
+      },
+      "real_vs_predicho": [
+        {
+          "fecha": "2026-05-29",
+          "real": 19,
+          "predicho": 17.709
+        },
+        {
+          "fecha": "2026-05-30",
+          "real": 9,
+          "predicho": 10.735
+        },
+        {
+          "fecha": "2026-05-31",
+          "real": 6,
+          "predicho": 8.039
+        },
+        {
+          "fecha": "2026-06-01",
+          "real": 24,
+          "predicho": 16.698
+        },
+        {
+          "fecha": "2026-06-02",
+          "real": 20,
+          "predicho": 16.323
+        },
+        {
+          "fecha": "2026-06-03",
+          "real": 13,
+          "predicho": 14.509
+        },
+        {
+          "fecha": "2026-06-04",
+          "real": 17,
+          "predicho": 15.001
+        },
+        {
+          "fecha": "2026-06-05",
+          "real": 24,
+          "predicho": 16.629
+        },
+        {
+          "fecha": "2026-06-06",
+          "real": 19,
+          "predicho": 11.044
+        },
+        {
+          "fecha": "2026-06-07",
+          "real": 5,
+          "predicho": 6.758
+        },
+        {
+          "fecha": "2026-06-08",
+          "real": 23,
+          "predicho": 17.808
+        },
+        {
+          "fecha": "2026-06-09",
+          "real": 17,
+          "predicho": 17.808
+        },
+        {
+          "fecha": "2026-06-10",
+          "real": 8,
+          "predicho": 16.104
+        },
+        {
+          "fecha": "2026-06-11",
+          "real": 19,
+          "predicho": 15.889
+        },
+        {
+          "fecha": "2026-06-12",
+          "real": 22,
+          "predicho": 16.74
+        },
+        {
+          "fecha": "2026-06-13",
+          "real": 7,
+          "predicho": 11.576
+        },
+        {
+          "fecha": "2026-06-14",
+          "real": 10,
+          "predicho": 8.919
+        },
+        {
+          "fecha": "2026-06-15",
+          "real": 16,
+          "predicho": 17.808
+        },
+        {
+          "fecha": "2026-06-16",
+          "real": 17,
+          "predicho": 17.808
+        },
+        {
+          "fecha": "2026-06-17",
+          "real": 16,
+          "predicho": 16.104
+        },
+        {
+          "fecha": "2026-06-18",
+          "real": 10,
+          "predicho": 15.768
+        },
+        {
+          "fecha": "2026-06-19",
+          "real": 20,
+          "predicho": 16.62
+        },
+        {
+          "fecha": "2026-06-20",
+          "real": 12,
+          "predicho": 11.514
+        },
+        {
+          "fecha": "2026-06-21",
+          "real": 10,
+          "predicho": 8.62
+        },
+        {
+          "fecha": "2026-06-22",
+          "real": 21,
+          "predicho": 16.752
+        },
+        {
+          "fecha": "2026-06-23",
+          "real": 24,
+          "predicho": 16.752
+        },
+        {
+          "fecha": "2026-06-24",
+          "real": 19,
+          "predicho": 15.209
+        },
+        {
+          "fecha": "2026-06-25",
+          "real": 14,
+          "predicho": 16.429
+        },
+        {
+          "fecha": "2026-06-26",
+          "real": 9,
+          "predicho": 17.28
+        },
+        {
+          "fecha": "2026-06-27",
+          "real": 5,
+          "predicho": 12.175
+        },
+        {
+          "fecha": "2026-06-28",
+          "real": 6,
+          "predicho": 9.21
+        },
+        {
+          "fecha": "2026-06-29",
+          "real": 24,
+          "predicho": 14.574
+        },
+        {
+          "fecha": "2026-06-30",
+          "real": 14,
+          "predicho": 17.8
+        },
+        {
+          "fecha": "2026-07-01",
+          "real": 24,
+          "predicho": 14.883
+        },
+        {
+          "fecha": "2026-07-02",
+          "real": 20,
+          "predicho": 14.293
+        },
+        {
+          "fecha": "2026-07-03",
+          "real": 22,
+          "predicho": 15.145
+        },
+        {
+          "fecha": "2026-07-04",
+          "real": 7,
+          "predicho": 10.157
+        },
+        {
+          "fecha": "2026-07-05",
+          "real": 11,
+          "predicho": 8.217
+        },
+        {
+          "fecha": "2026-07-06",
+          "real": 24,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-07-07",
+          "real": 23,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-07-08",
+          "real": 15,
+          "predicho": 16.104
+        },
+        {
+          "fecha": "2026-07-09",
+          "real": 16,
+          "predicho": 15.889
+        },
+        {
+          "fecha": "2026-07-10",
+          "real": 17,
+          "predicho": 16.74
+        },
+        {
+          "fecha": "2026-07-11",
+          "real": 13,
+          "predicho": 11.044
+        },
+        {
+          "fecha": "2026-07-12",
+          "real": 6,
+          "predicho": 8.861
+        },
+        {
+          "fecha": "2026-07-13",
+          "real": 15,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-07-14",
+          "real": 11,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-07-15",
+          "real": 20,
+          "predicho": 16.104
+        },
+        {
+          "fecha": "2026-07-16",
+          "real": 13,
+          "predicho": 15.889
+        },
+        {
+          "fecha": "2026-07-17",
+          "real": 17,
+          "predicho": 16.74
+        },
+        {
+          "fecha": "2026-07-18",
+          "real": 18,
+          "predicho": 11.514
+        },
+        {
+          "fecha": "2026-07-19",
+          "real": 9,
+          "predicho": 8.799
+        },
+        {
+          "fecha": "2026-07-20",
+          "real": 19,
+          "predicho": 16.671
+        },
+        {
+          "fecha": "2026-07-21",
+          "real": 24,
+          "predicho": 16.258
+        },
+        {
+          "fecha": "2026-07-22",
+          "real": 9,
+          "predicho": 15.679
+        },
+        {
+          "fecha": "2026-07-23",
+          "real": 11,
+          "predicho": 13.063
+        },
+        {
+          "fecha": "2026-07-24",
+          "real": 17,
+          "predicho": 15.986
+        },
+        {
+          "fecha": "2026-07-25",
+          "real": 13,
+          "predicho": 12.175
+        },
+        {
+          "fecha": "2026-07-26",
+          "real": 7,
+          "predicho": 9.459
+        },
+        {
+          "fecha": "2026-07-27",
+          "real": 19,
+          "predicho": 16.957
+        },
+        {
+          "fecha": "2026-07-28",
+          "real": 16,
+          "predicho": 13.277
+        },
+        {
+          "fecha": "2026-07-29",
+          "real": 14,
+          "predicho": 13.501
+        },
+        {
+          "fecha": "2026-07-30",
+          "real": 19,
+          "predicho": 15.653
+        },
+        {
+          "fecha": "2026-07-31",
+          "real": 20,
+          "predicho": 16.525
+        },
+        {
+          "fecha": "2026-08-01",
+          "real": 7,
+          "predicho": 10.358
+        },
+        {
+          "fecha": "2026-08-02",
+          "real": 17,
+          "predicho": 7.474
+        },
+        {
+          "fecha": "2026-08-03",
+          "real": 20,
+          "predicho": 16.238
+        },
+        {
+          "fecha": "2026-08-04",
+          "real": 15,
+          "predicho": 16.412
+        },
+        {
+          "fecha": "2026-08-05",
+          "real": 15,
+          "predicho": 15.993
+        },
+        {
+          "fecha": "2026-08-06",
+          "real": 13,
+          "predicho": 13.489
+        },
+        {
+          "fecha": "2026-08-07",
+          "real": 17,
+          "predicho": 16.74
+        },
+        {
+          "fecha": "2026-08-08",
+          "real": 4,
+          "predicho": 11.044
+        },
+        {
+          "fecha": "2026-08-09",
+          "real": 8,
+          "predicho": 7.936
+        },
+        {
+          "fecha": "2026-08-10",
+          "real": 17,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-08-11",
+          "real": 10,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-08-12",
+          "real": 21,
+          "predicho": 16.104
+        },
+        {
+          "fecha": "2026-08-13",
+          "real": 14,
+          "predicho": 15.889
+        },
+        {
+          "fecha": "2026-08-14",
+          "real": 24,
+          "predicho": 16.74
+        },
+        {
+          "fecha": "2026-08-15",
+          "real": 10,
+          "predicho": 11.635
+        },
+        {
+          "fecha": "2026-08-16",
+          "real": 0,
+          "predicho": 8.526
+        },
+        {
+          "fecha": "2026-08-17",
+          "real": 13,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-08-18",
+          "real": 20,
+          "predicho": 17.067
+        },
+        {
+          "fecha": "2026-08-19",
+          "real": 11,
+          "predicho": 15.984
+        },
+        {
+          "fecha": "2026-08-20",
+          "real": 9,
+          "predicho": 15.768
+        },
+        {
+          "fecha": "2026-08-21",
+          "real": 15,
+          "predicho": 16.346
+        },
+        {
+          "fecha": "2026-08-22",
+          "real": 8,
+          "predicho": 11.114
+        },
+        {
+          "fecha": "2026-08-23",
+          "real": 8,
+          "predicho": 8.005
+        },
+        {
+          "fecha": "2026-08-24",
+          "real": 14,
+          "predicho": 15.567
+        },
+        {
+          "fecha": "2026-08-25",
+          "real": 9,
+          "predicho": 16.861
+        },
+        {
+          "fecha": "2026-08-26",
+          "real": 13,
+          "predicho": 16.408
+        },
+        {
+          "fecha": "2026-08-27",
+          "real": 14,
+          "predicho": 16.334
+        },
+        {
+          "fecha": "2026-08-28",
+          "real": 18,
+          "predicho": 16.936
+        },
+        {
+          "fecha": "2026-08-29",
+          "real": 7,
+          "predicho": 12.508
+        },
+        {
+          "fecha": "2026-08-30",
+          "real": 8,
+          "predicho": 3.745
+        },
+        {
+          "fecha": "2026-08-31",
+          "real": 20,
+          "predicho": 14.919
+        },
+        {
+          "fecha": "2026-09-01",
+          "real": 24,
+          "predicho": 17.385
+        },
+        {
+          "fecha": "2026-09-02",
+          "real": 11,
+          "predicho": 15.815
+        },
+        {
+          "fecha": "2026-09-03",
+          "real": 16,
+          "predicho": 15.6
+        },
+        {
+          "fecha": "2026-09-04",
+          "real": 22,
+          "predicho": 16.625
+        },
+        {
+          "fecha": "2026-09-05",
+          "real": 10,
+          "predicho": 10.933
+        },
+        {
+          "fecha": "2026-09-06",
+          "real": 4,
+          "predicho": 7.936
+        },
+        {
+          "fecha": "2026-09-07",
+          "real": 15,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-09-08",
+          "real": 21,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-09-10",
+          "real": 16,
+          "predicho": 15.889
+        },
+        {
+          "fecha": "2026-09-11",
+          "real": 19,
+          "predicho": 16.74
+        },
+        {
+          "fecha": "2026-09-12",
+          "real": 0,
+          "predicho": 11.576
+        },
+        {
+          "fecha": "2026-09-13",
+          "real": 6,
+          "predicho": 8.468
+        },
+        {
+          "fecha": "2026-09-14",
+          "real": 11,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-09-15",
+          "real": 14,
+          "predicho": 17.188
+        },
+        {
+          "fecha": "2026-09-16",
+          "real": 17,
+          "predicho": 16.104
+        },
+        {
+          "fecha": "2026-09-17",
+          "real": 16,
+          "predicho": 15.889
+        },
+        {
+          "fecha": "2026-09-18",
+          "real": 18,
+          "predicho": 16.62
+        },
+        {
+          "fecha": "2026-09-19",
+          "real": 13,
+          "predicho": 11.514
+        },
+        {
+          "fecha": "2026-09-20",
+          "real": 15,
+          "predicho": 8.406
+        },
+        {
+          "fecha": "2026-09-21",
+          "real": 17,
+          "predicho": 16.163
+        },
+        {
+          "fecha": "2026-09-22",
+          "real": 14,
+          "predicho": 16.037
+        },
+        {
+          "fecha": "2026-09-23",
+          "real": 15,
+          "predicho": 15.584
+        },
+        {
+          "fecha": "2026-09-24",
+          "real": 15,
+          "predicho": 15.039
+        },
+        {
+          "fecha": "2026-09-25",
+          "real": 20,
+          "predicho": 17.185
+        },
+        {
+          "fecha": "2026-09-26",
+          "real": 9,
+          "predicho": 12.08
+        },
+        {
+          "fecha": "2026-09-27",
+          "real": 15,
+          "predicho": 8.971
+        },
+        {
+          "fecha": "2026-09-28",
+          "real": 20,
+          "predicho": 16.612
+        },
+        {
+          "fecha": "2026-09-29",
+          "real": 20,
+          "predicho": 17.29
+        },
+        {
+          "fecha": "2026-09-30",
+          "real": 16,
+          "predicho": 15.633
+        },
+        {
+          "fecha": "2026-10-01",
+          "real": 13,
+          "predicho": 14.515
+        },
+        {
+          "fecha": "2026-10-02",
+          "real": 19,
+          "predicho": 14.992
+        },
+        {
+          "fecha": "2026-10-03",
+          "real": 12,
+          "predicho": 9.615
+        },
+        {
+          "fecha": "2026-10-04",
+          "real": 10,
+          "predicho": 6.994
+        },
+        {
+          "fecha": "2026-10-05",
+          "real": 18,
+          "predicho": 15.679
+        },
+        {
+          "fecha": "2026-10-06",
+          "real": 24,
+          "predicho": 15.679
+        },
+        {
+          "fecha": "2026-10-07",
+          "real": 21,
+          "predicho": 14.595
+        },
+        {
+          "fecha": "2026-10-08",
+          "real": 13,
+          "predicho": 11.98
+        },
+        {
+          "fecha": "2026-10-09",
+          "real": 16,
+          "predicho": 15.231
+        },
+        {
+          "fecha": "2026-10-10",
+          "real": 9,
+          "predicho": 9.854
+        },
+        {
+          "fecha": "2026-10-11",
+          "real": 6,
+          "predicho": 6.745
+        },
+        {
+          "fecha": "2026-10-12",
+          "real": 15,
+          "predicho": 15.679
+        },
+        {
+          "fecha": "2026-10-13",
+          "real": 10,
+          "predicho": 15.679
+        },
+        {
+          "fecha": "2026-10-14",
+          "real": 15,
+          "predicho": 14.595
+        },
+        {
+          "fecha": "2026-10-15",
+          "real": 13,
+          "predicho": 14.379
+        },
+        {
+          "fecha": "2026-10-16",
+          "real": 10,
+          "predicho": 15.231
+        },
+        {
+          "fecha": "2026-10-17",
+          "real": 5,
+          "predicho": 10.445
+        },
+        {
+          "fecha": "2026-10-18",
+          "real": 5,
+          "predicho": 7.216
+        },
+        {
+          "fecha": "2026-10-19",
+          "real": 10,
+          "predicho": 15.558
+        },
+        {
+          "fecha": "2026-10-20",
+          "real": 15,
+          "predicho": 15.162
+        },
+        {
+          "fecha": "2026-10-21",
+          "real": 15,
+          "predicho": 14.126
+        },
+        {
+          "fecha": "2026-10-22",
+          "real": 19,
+          "predicho": 13.784
+        }
+      ]
+    }
+  },
+  "configuracion": {
+    "clasificacion": {
+      "Random Forest": {
+        "bootstrap": "True",
+        "ccp_alpha": "0.0",
+        "class_weight": "balanced",
+        "criterion": "gini",
+        "max_depth": "6",
+        "max_features": "sqrt",
+        "max_leaf_nodes": "None",
+        "max_samples": "None",
+        "min_impurity_decrease": "0.0",
+        "min_samples_leaf": "4",
+        "min_samples_split": "2",
+        "min_weight_fraction_leaf": "0.0",
+        "monotonic_cst": "None",
+        "n_estimators": "200",
+        "n_jobs": "1",
+        "oob_score": "False",
+        "random_state": "42",
+        "verbose": "0",
+        "warm_start": "False"
+      },
+      "Decision Tree": {
+        "ccp_alpha": "0.0",
+        "class_weight": "balanced",
+        "criterion": "gini",
+        "max_depth": "5",
+        "max_features": "None",
+        "max_leaf_nodes": "None",
+        "min_impurity_decrease": "0.0",
+        "min_samples_leaf": "4",
+        "min_samples_split": "2",
+        "min_weight_fraction_leaf": "0.0",
+        "monotonic_cst": "None",
+        "random_state": "42",
+        "splitter": "best"
+      },
+      "Gradient Boosting": {
+        "ccp_alpha": "0.0",
+        "criterion": "deprecated",
+        "init": "None",
+        "learning_rate": "0.1",
+        "loss": "log_loss",
+        "max_depth": "2",
+        "max_features": "None",
+        "max_leaf_nodes": "None",
+        "min_impurity_decrease": "0.0",
+        "min_samples_leaf": "1",
+        "min_samples_split": "2",
+        "min_weight_fraction_leaf": "0.0",
+        "n_estimators": "100",
+        "n_iter_no_change": "None",
+        "random_state": "42",
+        "subsample": "1.0",
+        "tol": "0.0001",
+        "validation_fraction": "0.1",
+        "verbose": "0",
+        "warm_start": "False"
+      },
+      "KNN": {
+        "memory": "None",
+        "steps": "[('standardscaler', StandardScaler()), ('kneighborsclassifier', KNeighborsClassifier())]",
+        "transform_input": "None",
+        "verbose": "False",
+        "standardscaler": "StandardScaler()",
+        "kneighborsclassifier": "KNeighborsClassifier()",
+        "standardscaler__copy": "True",
+        "standardscaler__with_mean": "True",
+        "standardscaler__with_std": "True",
+        "kneighborsclassifier__algorithm": "auto",
+        "kneighborsclassifier__leaf_size": "30",
+        "kneighborsclassifier__metric": "minkowski",
+        "kneighborsclassifier__metric_params": "None",
+        "kneighborsclassifier__n_jobs": "None",
+        "kneighborsclassifier__n_neighbors": "5",
+        "kneighborsclassifier__p": "2",
+        "kneighborsclassifier__weights": "uniform"
+      },
+      "Logistic Regression": {
+        "memory": "None",
+        "steps": "[('standardscaler', StandardScaler()), ('logisticregression', LogisticRegression(class_weight='balanced', max_iter=2000, random_state=42))]",
+        "transform_input": "None",
+        "verbose": "False",
+        "standardscaler": "StandardScaler()",
+        "logisticregression": "LogisticRegression(class_weight='balanced', max_iter=2000, random_state=42)",
+        "standardscaler__copy": "True",
+        "standardscaler__with_mean": "True",
+        "standardscaler__with_std": "True",
+        "logisticregression__C": "1.0",
+        "logisticregression__class_weight": "balanced",
+        "logisticregression__dual": "False",
+        "logisticregression__fit_intercept": "True",
+        "logisticregression__intercept_scaling": "1",
+        "logisticregression__l1_ratio": "0.0",
+        "logisticregression__max_iter": "2000",
+        "logisticregression__n_jobs": "None",
+        "logisticregression__penalty": "deprecated",
+        "logisticregression__random_state": "42",
+        "logisticregression__solver": "lbfgs",
+        "logisticregression__tol": "0.0001",
+        "logisticregression__verbose": "0",
+        "logisticregression__warm_start": "False"
+      }
+    },
+    "regresion": {
+      "Random Forest": {
+        "bootstrap": "True",
+        "ccp_alpha": "0.0",
+        "criterion": "squared_error",
+        "max_depth": "6",
+        "max_features": "1.0",
+        "max_leaf_nodes": "None",
+        "max_samples": "None",
+        "min_impurity_decrease": "0.0",
+        "min_samples_leaf": "4",
+        "min_samples_split": "2",
+        "min_weight_fraction_leaf": "0.0",
+        "monotonic_cst": "None",
+        "n_estimators": "200",
+        "n_jobs": "1",
+        "oob_score": "False",
+        "random_state": "42",
+        "verbose": "0",
+        "warm_start": "False"
+      },
+      "Decision Tree": {
+        "ccp_alpha": "0.0",
+        "criterion": "squared_error",
+        "max_depth": "5",
+        "max_features": "None",
+        "max_leaf_nodes": "None",
+        "min_impurity_decrease": "0.0",
+        "min_samples_leaf": "4",
+        "min_samples_split": "2",
+        "min_weight_fraction_leaf": "0.0",
+        "monotonic_cst": "None",
+        "random_state": "42",
+        "splitter": "best"
+      },
+      "Gradient Boosting": {
+        "alpha": "0.9",
+        "ccp_alpha": "0.0",
+        "criterion": "deprecated",
+        "init": "None",
+        "learning_rate": "0.1",
+        "loss": "squared_error",
+        "max_depth": "2",
+        "max_features": "None",
+        "max_leaf_nodes": "None",
+        "min_impurity_decrease": "0.0",
+        "min_samples_leaf": "1",
+        "min_samples_split": "2",
+        "min_weight_fraction_leaf": "0.0",
+        "n_estimators": "100",
+        "n_iter_no_change": "None",
+        "random_state": "42",
+        "subsample": "1.0",
+        "tol": "0.0001",
+        "validation_fraction": "0.1",
+        "verbose": "0",
+        "warm_start": "False"
+      },
+      "KNN": {
+        "memory": "None",
+        "steps": "[('standardscaler', StandardScaler()), ('kneighborsregressor', KNeighborsRegressor())]",
+        "transform_input": "None",
+        "verbose": "False",
+        "standardscaler": "StandardScaler()",
+        "kneighborsregressor": "KNeighborsRegressor()",
+        "standardscaler__copy": "True",
+        "standardscaler__with_mean": "True",
+        "standardscaler__with_std": "True",
+        "kneighborsregressor__algorithm": "auto",
+        "kneighborsregressor__leaf_size": "30",
+        "kneighborsregressor__metric": "minkowski",
+        "kneighborsregressor__metric_params": "None",
+        "kneighborsregressor__n_jobs": "None",
+        "kneighborsregressor__n_neighbors": "5",
+        "kneighborsregressor__p": "2",
+        "kneighborsregressor__weights": "uniform"
+      },
+      "Ridge": {
+        "memory": "None",
+        "steps": "[('standardscaler', StandardScaler()), ('ridge', Ridge())]",
+        "transform_input": "None",
+        "verbose": "False",
+        "standardscaler": "StandardScaler()",
+        "ridge": "Ridge()",
+        "standardscaler__copy": "True",
+        "standardscaler__with_mean": "True",
+        "standardscaler__with_std": "True",
+        "ridge__alpha": "1.0",
+        "ridge__copy_X": "True",
+        "ridge__fit_intercept": "True",
+        "ridge__max_iter": "None",
+        "ridge__positive": "False",
+        "ridge__random_state": "None",
+        "ridge__solver": "auto",
+        "ridge__tol": "0.0001"
+      }
+    }
+  },
+  "limitaciones": [
+    "Escenario sintético documentado; los resultados no acreditan rendimiento sobre atenciones reales.",
+    "Modelos ajustados con el 80 % inicial: la prueba describe exactamente el artefacto servido.",
+    "Sólo calendario; sin rezagos, tendencia, capacidad ni disponibilidad de personal.",
+    "Probabilidades sin calibrar; no son garantía de acierto. Sin intervalos de regresión.",
+    "Mejora orientativa: >0.02 F1 o reducción de MAE >5 % en validación y prueba; no es significación estadística.",
+    "No incluye días compensables ni feriados regionales. Supuesto de actividad reducida, no cierre obligatorio.",
+    "Clasificación y cantidad independientes: pueden discrepar; no se inventan umbrales."
+  ],
+  "procedencia": {
+    "tipo": "sintetico",
+    "semilla": 20261023,
+    "validacion_externa": false,
+    "regla_etiquetas": {
+      "BAJA": "0–9",
+      "MEDIA": "10–17",
+      "ALTA": "18–24"
+    },
+    "base_sha256_antes_entrenar": "ac858a147f944df65a2ac1bac8750c75321bcffaa0520b8d02b9ea307ddb544c"
+  },
+  "sha256": "20bd44340d48b51d564e98c65cd8d41987984ea4655192dd91d85e35d23f3b63"
+}

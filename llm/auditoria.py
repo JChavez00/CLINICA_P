@@ -5,7 +5,7 @@ from datetime import timedelta
 from uuid import uuid4
 
 from flask import current_app
-from models import db, AgenteEjecucion, ahora_utc
+from models import db, AgenteEjecucion, AgenteRecorrido, ahora_utc
 from .esquemas import ErrorAgente
 
 
@@ -23,10 +23,17 @@ def limite():
     if recientes>=maximo: raise ErrorAgente("limite_de_consultas",429)
 
 
-def registrar(agente,modulo,herramienta,duracion,estado,error=None):
+def registrar(agente,modulo,herramienta,duracion,estado,error=None,recorrido=None):
     ejecucion=AgenteEjecucion(id=str(uuid4()),agente=agente,modulo=modulo,herramienta=herramienta,
-                             duracion_ms=int(duracion*1000),estado=estado,error_codigo=error)
-    db.session.add(ejecucion); db.session.commit()
+                             duracion_ms=max(round(duracion*1000), max((p['fin_ms'] for p in recorrido['pasos']), default=0) if recorrido else 0),estado=estado,error_codigo=error)
+    db.session.add(ejecucion)
+    if recorrido is not None:
+        db.session.flush()
+        db.session.add(AgenteRecorrido(ejecucion_id=ejecucion.id,
+            flujo_id=recorrido.get("flujo_id") or ejecucion.id,
+            padre_id=recorrido.get("padre_id"), proveedor=recorrido["proveedor"],
+            modelo=recorrido["modelo"][:120], pasos=recorrido["pasos"]))
+    db.session.commit()
     if error:
         # Gunicorn/Render recibe el código controlado, nunca prompts, fichas,
         # credenciales ni el texto de la excepción del proveedor.

@@ -10,9 +10,9 @@ AGENTES={"consultor":ConsultorClinico(),"analista":AnalistaInteligente(),
 MODULOS={"chat":{"consultor","analista"},"reportes":{"reportes"},"tareas":{"tareas"},"calidad":{"calidad"}}
 
 
-def coordinar(modulo,agente,solicitud,contexto=None):
+def coordinar(modulo,agente,solicitud,contexto=None,*,flujo_id=None,padre_id=None):
     if agente not in MODULOS.get(modulo,set()): raise ErrorAgente("agente_fuera_de_modulo",403)
-    return AGENTES[agente].ejecutar(solicitud,contexto,modulo)
+    return AGENTES[agente].ejecutar(solicitud,contexto,modulo,flujo_id=flujo_id,padre_id=padre_id)
 
 
 def ejecutar_agentes(pregunta,resumen=None,seleccion=None):
